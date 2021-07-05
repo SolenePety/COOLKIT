@@ -1,0 +1,309 @@
+---
+title: "Analyse différentielle"
+author: "Solène Pety"
+date: "02/04/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
+```
+
+**Le but ici est de mettre en évidence les gènes qui se démarquent pour un stress donné par rapport aux autres. On cherche à établir une signature de stress avec ces gènes différentiellement exprimés.**  
+
+Le package limma permet d'obtenir une grande matrice avec les stress en colonnes et les gènes en lignes. La valeur est soit -1,0 ou 1 correspondant respectivement à une **sous expression**, **pas de différence significative** ou une **sur expression**.  
+
+On peut retrouver le upset plot à la fin de ce document qui permet de voir le recoupement ou non des gènes DEG au sein des différents stress.
+A la suite de la compilation, les fichiers signatures de stress sont générés ainsi que deux listes de gènes DEG pour les stress abiotiques sauf ceux propres à UV et de la même manière avec Nectrotrophic bacteria pour les stress biotiques.
+
+```{r init}
+library(FactoMineR)
+library(factoextra)
+library("corrplot")
+library(ggsci)
+library(plotly)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(pander)
+library(knitr)
+library(discoveR) 
+library(ade4) #PCA/BCA
+library(adegraphics) #elements graphiques ade4
+library(vegan)
+library(MASS)
+library(ComplexUpset) #Upsetplot
+library(RColorBrewer) #Palettes
+library(forcats) #reorder boxplot
+library(limma) #Bioconductor
+library(prodlim)
+library(ggplotify)
+```
+
+  
+```{r files}
+#Changement chemin 
+setwd("../docs_txt/")
+
+#Variables imprortantes
+stress=c("BIOTROPHIC.BACTERIA","DROUGHT","FUNGI","GAMMA","HEAVY.METAL",
+         "NECROTROPHIC.BACTERIA","NEMATODE","NITROGEN","OOMYCETE","OTHER-ABIOTIC",
+         "OTHER-BIOTIC","OXYDATIVE.STRESS","RHODOCOCCUS","SALT","STIFENIA",
+         "TEMPERATURE","UV","VIRUS")
+
+abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
+
+biotic=c("BIOTROPHIC.BACTERIA","FUNGI","NECROTROPHIC.BACTERIA","NEMATODES","OOMYCETE","OTHER-BIOTIC","RHODOCOCCUS","STIFENIA","VIRUS")
+
+#Chargement jeu de données
+data=read.table("table_data.txt",header=TRUE,sep='\t')
+data=data[order(data$vec), ]
+
+#--------------------------------------------------------------------------------------------------#
+                                        #Données abiotiques
+#--------------------------------------------------------------------------------------------------#
+
+data_abiotic=data[data[,2] %in% abiotic, ]
+data_abiotic=data_abiotic[order(data_abiotic$vec), ]
+
+stress=data_abiotic[,2] #récupération vecteur stress
+data_abiotic=data_abiotic[,c(-1,-2,-3)] #enlever swap_ID, stress et project ID
+
+names_col=colnames(data_abiotic) #liste noms gènes
+
+data_abiotic=t(data_abiotic) #transposée avec gènes en lignes et stress en colonnes
+#class(data_abiotic[1,1]) #verification class=numéric
+data_abiotic=as.data.frame(apply(data_abiotic, 2, as.numeric)) #convertion si nécessaire
+
+names(data_abiotic)<-stress #modification noms colonnes
+rownames(data_abiotic)<-names_col #modification noms lignes
+
+#--------------------------------------------------------------------------------------------------#
+                                        #Données biotiques
+#--------------------------------------------------------------------------------------------------#
+data_biotic=data[data[,2] %in% biotic, ]
+data_biotic=data_biotic[order(data_biotic$vec), ]
+
+stress2=data_biotic[,2] #récupération vecteur stress
+data_biotic=data_biotic[,c(-1,-2 ,-3)] #enlever swap_ID, stress et project ID
+
+names_col2=colnames(data_biotic) #liste noms gènes
+
+data_biotic=t(data_biotic) #transposée avec gènes en lignes et stress en colonnes
+#class(data_abiotic[1,1]) #verification class=numéric
+data_biotic=as.data.frame(apply(data_biotic, 2, as.numeric)) #convertion si nécessaire
+
+names(data_biotic)<-stress2 #modification noms colonnes
+rownames(data_biotic)<-names_col2 #modification noms lignes
+```
+
+```{r limma abiotic}
+library(limma)
+
+design_matrix <- model.matrix(~ 0 + stress) #matrice diagonale avec stress par échantillon en ligne
+
+colnames(design_matrix) <- abiotic #renommer colonnes matrice avec levels 
+
+#Utilisation du modèle
+fit <- lmFit(data_abiotic,
+             design_matrix)
+
+#Même importance accordée à tous les stress
+contrast.matrix <- cbind(c(1,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,1,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,1,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,1,-1/8,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,1,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,-1/8,1,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,1,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,1,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,1))
+
+rownames(contrast.matrix)<-abiotic
+fit2 <- contrasts.fit(fit,contrast.matrix)
+fit2 <- eBayes(fit2)
+de_trt <- topTable(fit2, number = nrow(data_abiotic),
+                adjust.method="BH", sort.by="none")
+result<-decideTests(fit2, method = "separate", adjust.method="BH", p.value = 0.05) #matrice des 
+colnames(result)<-abiotic
+#résultats, seuil de significativité à 0.05
+
+up_down=apply(result,2,table)
+
+result[result!=0]<-TRUE
+result[result==0]<-FALSE
+result=as.data.frame(result)
+
+#Compter le nombre de gènes avec au moins 1 gène statistiquement exprimés différentiellement par rapport aux autres stress.
+count1=apply(result,1,sum)
+```
+
+```{r limma biotic}
+design_matrix2 <- model.matrix(~ 0 + stress2) #matrice diagonale avec stress par échantillon en ligne
+
+colnames(design_matrix2) <- biotic #renommer colonnes matrice avec levels 
+
+fit3 <- lmFit(data_biotic,
+             design_matrix2)
+
+contrast.matrix2 <- cbind(c(1,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,1,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,1,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,1,-1/8,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,1,-1/8,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,-1/8,1,-1/8,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,1,-1/8,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,1,-1/8),
+                         c(-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,-1/8,1))
+rownames(contrast.matrix2)<-biotic
+
+fit4 <- contrasts.fit(fit3,contrast.matrix2)
+fit4 <- eBayes(fit4)
+de_trt <- topTable(fit4, number = nrow(data_biotic),
+                adjust.method="BH", sort.by="none")
+result2<-decideTests(fit4, method = "separate", adjust.method="BH", p.value = 0.05) #matrice des 
+colnames(result2)<-biotic
+#résultats, seuil de significativité à 0.05
+
+up_down2=apply(result2,2,table)
+#up_down[-2,]
+
+result2[result2!=0]<-TRUE
+result2[result2==0]<-FALSE
+result2=as.data.frame(result2)
+
+count2=apply(result2,1,sum)
+```
+On sépare les stress biotiques et abiotiques pour l'analyse des résultats. On retrouve les tableaux des effectifs des gènes sur et sous exprimés ainsi que le upset plot correspondant.  
+
+# **Stress abiotiques**  
+## **Tableau des effectifs** 
+||Drought|Gamma|Heavy metal|Nitrogen|Other abiotic|Oxydative stress|Salt|Temperature|UV|
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+|**-1**|112|171|334|687|108|808|77|757|2589|
+|**1**|150|414|404|937|113|909|138|1107|2574|  
+
+## **Upset plot** 
+```{r upset plot}
+#résultats intéressant pour le upset plot sont dans la matrice résult.
+#pas besoin de faire la boucle pour créer la matrice ici
+
+#Modification matrice pour upset plot
+
+(upset(result,abiotic, name="Stress", min_size=30,min_degree=1,width_ratio = 0.3,set_sizes = FALSE)
++ ggtitle("Données stress abiotiques"))
+
+``` 
+  
+  
+## **Nombre gènes impliqués**  
+
+A partir de la matrice obtenue il est possible de compter le nombre de gènes impliqués dans ces signatures de stress.  
+On compte pour cela le nombre de **TRUE** dans chaque ligne :  
+  
+|**0**|**1**|**2**|**3**|**4**|**5**|**6**|**7**|**8**|**9**|   
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|  
+|9556|4636|2159|661|224|86|11|5|2|1|   
+  
+Un gène est exprimé différentiellement dans tous les stress. 7785 gènes sont impliqués.
+  
+# **Stress biotiques**  
+## **Tableau des effectifs**  
+
+||Biotrophic|Fungi|Necrotrophic|Nematodes|Oomycete|Other biotic|Rhodococcus|Stifenia|Virus|
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+|**-1**|833|127|2598|1315|14|32|36|69|1146|
+|**1**|1332|150|2480|1382|15|65|52|25|1205|  
+
+
+## **Upset plot** 
+```{r upset plot2}
+(upset(result2,biotic, name="Stress", min_size=10,min_degree=1,width_ratio=0.3,set_sizes = FALSE)
++ ggtitle("Données stress biotiques"))
+
+```
+  
+  
+## **Nombre gènes impliqués**  
+
+A partir de la matrice obtenue il est possible de compter le nombre de gènes impliqués dans ces signatures de stress.  
+On compte pour cela le nombre de **TRUE** dans chaque ligne :  
+  
+|**0**|**1**|**2**|**3**|**4**|**5**|**9**|  
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|  
+|8174|6056|2579|473|56|2|1|  
+  
+Un gène est exprimé différentiellement dans tous les stress également. 9167 sont impliqués.  
+  
+
+```{r liste,fig.width=10}
+#Etablir les listes des gènes pour les nouveaux gene set signatures, pour les stress abiotiques
+#Les fichiers sont ensuites générés dans files_creation.R
+
+#--------------------------------------------------------------------------------------------------#
+                                        #Liste sans DEG uniques UV/Necrotrophic bacteria
+#--------------------------------------------------------------------------------------------------#
+liste1=result[which(rowSums(abs(result))>0),]
+liste1=liste1[-which(abs(liste1$UV)==1 & rowSums(abs(liste1))==1),]
+liste1=rownames(liste1)
+write.table(liste1,file="liste_DEG_withoutUV.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+liste2=result2[which(rowSums(abs(result2))>0),]
+liste2=liste2[-which(abs(liste2$NECROTROPHIC.BACTERIA)==1 & rowSums(abs(liste2))==1),]
+liste2=rownames(liste2)
+write.table(liste2,file="liste_DEG_withoutNECRO.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+#--------------------------------------------------------------------------------------------------#
+                                        #Ecriture dans ouput HTML
+#--------------------------------------------------------------------------------------------------#
+
+#DROUGHT
+liste=result[which(rowSums(abs(result))==1 & result$DROUGHT==1),]
+liste=rownames(liste)
+write.table(liste,file="DROUGHT_list.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+#GAMMA
+liste=result[which(rowSums(abs(result))==1 & result$GAMMA==1),]
+liste=rownames(liste)
+write.table(liste,file="GAMMA_list.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+#HEAVY.METAL
+liste=result[which(rowSums(abs(result))==1 & result$HEAVY.METAL==1),]
+liste=rownames(liste)
+write.table(liste,file="HEAVY.METAL_list.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+#NITROGEN
+liste=result[which(rowSums(abs(result))==1 & result$NITROGEN==1),]
+liste=rownames(liste)
+write.table(liste,file="NITROGEN_list.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+#OTHER-ABIOTIC
+liste=result[which(rowSums(abs(result))==1 & result$`OTHER-ABIOTIC`==1),]
+liste=rownames(liste)
+write.table(liste,file="OTHER.ABIOTIC_list.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+#OXYDATIVE.STRESS
+liste=result[which(rowSums(abs(result))==1 & result$OXYDATIVE.STRESS==1),]
+liste=rownames(liste)
+write.table(liste,file="OXYDATIVE.STRESS_list.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+#SALT
+liste=result[which(rowSums(abs(result))==1 & result$SALT==1),]
+liste=rownames(liste)
+write.table(liste,file="SALT_list.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+#TEMPERATURE
+liste=result[which(rowSums(abs(result))==1 & result$TEMPERATURE==1),]
+liste=rownames(liste)
+write.table(liste,file="TEMPERATURE_list.txt",sep="\t",row.names=FALSE,quote=FALSE)
+
+#UV
+liste=result[which(rowSums(abs(result))==1 & result$UV==1),]
+liste=rownames(liste)
+write.table(liste,file="UV_list.txt",sep="\t",row.names=FALSE,quote=FALSE)
+```
