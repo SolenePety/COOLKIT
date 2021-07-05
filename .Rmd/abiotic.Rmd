@@ -67,7 +67,7 @@ fviz_pca_ind(res2,
              habillage = 1, # color by groups
              addEllipses = TRUE # Concentration ellipses,
             
-)+labs(title="ACP données brutes\n Rythme Circadien")
+)+labs(title="ACP données scaled\n Rythme Circadien")
 ```
 
 ## **ACP données centrées réduites**
