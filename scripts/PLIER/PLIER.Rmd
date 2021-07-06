@@ -1,0 +1,890 @@
+---
+title: "PLIER"
+author: "Solène Pety"
+date: "20/05/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
+```
+
+```{r init}
+library(dplyr)
+library(tidyverse)
+library(kableExtra)
+library(PLIER)
+library(AnnotationDbi)
+library(Biostrings)
+library(ParaMisc)
+library(KEGGAPI)
+library(ComplexHeatmap)
+library(gridExtra)
+library(cowplot)
+library(viridis)
+library(ggpubr)
+library(rstatix)
+library(emmeans)
+library(DT)
+```
+
+```{r commandes}
+source(file.path("..","..","git_multiplier","util","plier_util.R"))
+```
+  
+**L'objectif de ce rapport est de construire un modèle à l'aide de PLIER sur l'ensemble des données GEM2Net, sans faire la distinction des stress biotiques et abiotiques pour le calcul du modèle.**  
+  
+**PLIER se base sur un ensemble de pathways et/ou Gene sets pour établir un modèle composé de variables latentes. Avec le package, un certain nombre de pathways humains sont compris. Pour Arabidopsis Thaliana nous avons utilisé les données AraCyc (379 pathways) et KEGG (136 pathways). En plus de ces pathways, les Gene Set (9) correspondant aux GO SLIM ont été intégré. **  
+  
+**Une fois la matrice binaire des pathways obtenus, la matrice est de taille 17341 gènes et 524 pathways. Afin de limiter le temps de calcul et pour appliquer une partie des filtres que PLIER va utiliser, les pathways ayant moins de 10 gènes impliqués sont retirés afin de permettre la cross-validation de se faire ainsi que les gènes n'étant impliqués dans aucun pathway. La matrice passe alors à 5026 gènes et 210 pathways. **  
+  
+**Afin d'éviter une redondance dans les pathways, l'indice de Jaccard deux à deux entre les pathways est calculée. Pour un indice supérieure à 0.5, deux pathways sont considérés comme identiques.**  
+  
+## **Matrice binaire des pathways**  
+  
+ 
+```{r data,cache=TRUE}
+setwd("C:/Users/spety/OneDrive/Documents/M1_BIMS/Stage/Rstudio/docs_txt")
+
+#-----------------------------------------------------------------------------------#
+                                    #Aracyc
+#-----------------------------------------------------------------------------------#
+
+data=read.table("ara_pathways.20210325.txt",sep="\t",header=TRUE,fill=TRUE)
+Aracyc=data[,c(2,7)] #récupération colonne pathway id et gène ID asocié
+Aracyc=Aracyc[-which(Aracyc[,2]=="unknown"),] #On enlève les pathways sans gène 
+unique_paths=unique(Aracyc[,1]) #vec avec pathway id 
+
+
+#-----------------------------------------------------------------------------------#
+                                    #Données d'expression
+#-----------------------------------------------------------------------------------#
+
+data2=read.table("table_data.txt",sep="\t",header=TRUE)
+Stress=data2[,2]
+SampleID=data2[,3]
+data2=data2[,c(-1,-2,-3)]
+data2=t(data2)
+genes=rownames(data2)
+exprs.mat=as.data.frame(data2)
+
+#-----------------------------------------------------------------------------------#
+                                    #GO SLIM
+#-----------------------------------------------------------------------------------#
+files=c("circadian_rythm.txt","photo.txt",
+        "abiotic.txt","biotic.txt","endogenous.txt",
+        "external.txt","flower.txt","growth.txt",
+        "light.txt")
+name=c("Rythm circadian","Photosynthesis","Abiotic",
+       "Biotic","Endogenous","External","Flower","Growth","Light")
+
+Liste=list()
+for(f in 1:length(files)){
+  data3=read.table(files[f],sep="\t",header=TRUE)
+  data3=data3[,c(-1,-2,-3)]
+  col=colnames(data3)
+  Liste[f]=list(col)
+}
+Mat_GOSLIM=cbind(name,Liste)
+
+GOSLIM=matrix(0,nrow=17341,ncol=length(Mat_GOSLIM[,2]))
+GOSLIM=as.data.frame(GOSLIM)
+colnames(GOSLIM)<-name
+rownames(GOSLIM)<-genes
+
+for(z in 1:length(Mat_GOSLIM[,2])){
+    match=match(unlist(Mat_GOSLIM[z,2]),genes)
+    match=match[!is.na(match)]
+    GOSLIM[match,z]=1
+}
+
+
+#-----------------------------------------------------------------------------------#
+                                    #Pathways A.Thaliana : KEGG
+#-----------------------------------------------------------------------------------#
+athPathGenes <- getKEGGPathGenes('ath')
+paths=getKEGGPathAnno('ath')
+athPathGenes <- cbind(athPathGenes,paths[,2])
+colnames(athPathGenes)<-c("Genes","Path_name")
+
+#Formatage des données
+for(j in 1:length(athPathGenes[,1])){
+  athPathGenes[j,1]=list(gsub("ath:","",unlist(athPathGenes[j,1])))
+  athPathGenes[j,2]=gsub(".\\-.Arabidopsis thaliana \\(thale cress\\)","",athPathGenes[j,2])
+}
+
+KEGG=matrix(0,nrow=17341,ncol=length(athPathGenes[,2]))
+KEGG=as.data.frame(KEGG)
+colnames(KEGG)<-athPathGenes[,2]
+rownames(KEGG)<-genes
+
+for(i in 1:length(athPathGenes[,2])){
+    match=match(unlist(athPathGenes[i,1]),genes)
+    match=match[!is.na(match)]
+    KEGG[match,i]=1
+}
+
+#-----------------------------------------------------------------------------------#
+                                    #Pathways Aracyc
+#-----------------------------------------------------------------------------------#
+
+matrix=matrix(0,nrow=17341,ncol=length(unique_paths))
+matrix=as.data.frame(matrix)
+colnames(matrix)<-unique_paths
+rownames(matrix)<-genes
+
+for(i in 1:length(unique_paths)){
+  match=match(Aracyc[which(Aracyc[,1]==unique_paths[i]),2],genes)
+  match=match[!is.na(match)]
+  matrix[match,i]=1
+}
+
+#-----------------------------------------------------------------------------------#
+                                    #GO SLIM
+#-----------------------------------------------------------------------------------#
+
+database=c(rep("AraCyc",379),rep("KEGG",136),rep("GOSLIM",9))
+BigM=cbind(matrix,KEGG,GOSLIM)
+
+#On ne conserve que les pathways avec au moins 5 gènes impliqués et on enlève les gènes qui ne sont dans aucun pathways
+index=which(colSums(BigM)>=9)
+BigM=BigM[,index]
+database=database[index]
+BigM=BigM[which(rowSums(BigM)>=1),]
+genes.BigM=rownames(BigM)
+paths.BigM=colnames(BigM)
+
+
+#-----------------------------------------------------------------------------------#
+                                    #Indice de Jaccard
+#-----------------------------------------------------------------------------------#
+#Filtre supplémentaire afin de ne pas avoir de redondance des pathways : indice de jaccard pour observer overlapping entre les pathways
+included=c()
+for(q in 1:210){
+  included.genes=c()
+  for(c in 1:length(BigM[,q])){
+    if(BigM[c,q]==1){
+      included.genes=append(included.genes,genes.BigM[c])}
+  }
+  included[q]=list(included.genes)
+}
+jaccardM=cbind(colnames(BigM),included)
+
+  cat("\n")    
+  pander::pandoc.header(paste0("**Taille des gènes par pathways**"), level = 3)
+
+  size=cbind(paths.BigM,apply(BigM,2,sum))
+  colnames(size)=c("Pathway","Nb gènes")
+  rownames(size)=c(1:length(paths.BigM))
+  datatable(size,options=list(searching=FALSE))
+  summary=as.data.frame(unclass(summary(apply(BigM,2,sum))))
+  colnames(summary)="Summary"
+  knitr::kable(summary,align='c')%>%kable_styling("striped")
+  
+    cat("\n")    
+  pander::pandoc.header(paste0("**Heatmap indice de Jaccard**"), level = 3)
+  
+jaccard <- function(a, b) {
+    intersection = length(intersect(a, b))
+    union = length(a) + length(b) - intersection
+    return (intersection/union)
+}
+
+jaccardM2=matrix(0,ncol=210,nrow=210)
+for(x in 1:210){
+  for(v in 1:210){
+    if(x!=v){
+      jaccardM2[x,v]=jaccard(unlist(included[x]),unlist(included[v]))
+    }
+  }
+}
+Heatmap(jaccardM2,col=viridis(30),name="Indice") 
+
+  cat("\n")    
+  pander::pandoc.header(paste0("**Courbe distribution indice Jaccard**"), level = 3) #récupérer l'ensemble des valeurs, pivot_longer ? geom_density
+  
+jaccard_long=as.data.frame(jaccardM2)%>%pivot_longer(cols=c(1:210),
+                                     names_to = "Jaccard",
+                                     values_to = "Values")
+
+ggplot(jaccard_long[-which(jaccard_long$Values==0),], aes(x=Values))+
+geom_histogram()+
+ggtitle("Valeurs indice de Jaccard >0\n (Plus de 40000 indice à 0)")
+
+
+remove_index <- c()
+for(i in 1:210) {
+  tmp <- which(jaccardM2[i,] > 0.5)
+  remove_index <- c(remove_index, tmp[which(tmp > i)])
+}
+remove_index <- unique(remove_index)
+
+
+#Enlever les pathways trop proches, indice de jaccard > 0.5
+
+BigM=BigM[,-remove_index]
+database=database[-remove_index]
+```
+  
+**Pour la commande PLIER en elle-même, la majorité des paramètres sont laissés par défaut. Pour le nombre de variables latentes k, nous utilisons la fonction num.pc(). Selon le papier Taroni et al. sur MultiPLIER le nombre en sorti est à multiplier par 1,3. La fonction prend en entrée la matrice avec les données d'expression (gènes en lignes et échantillons en colonnes) et la matrice binaire avec les gènes en lignes et les pathways en colonne. Les autres paramètres sont :**  
+  
+*PLIER(data, priorMat, svdres = NULL, k = NULL, L1 = NULL, L2 = NULL,*    
+*L3 = NULL, frac = 0.7, max.iter = 350, trace = F, scale = T,*   
+*Chat = NULL, maxPath = 10, doCrossval = T, penalty.factor = rep(1,*  
+*ncol(priorMat)), glm_alpha = 0.9, minGenes = 10, tol = 1e-06,* 
+*seed = 123456, allGenes = F, rseed = NULL,*  
+*pathwaySelection = c("complete", "fast"))*  
+  
+```{r PLIER}
+#-----------------------------------------------------------------------------------#
+                                      #PLIER
+#-----------------------------------------------------------------------------------#
+
+#cm.genes=commonRows(BigM, exprs.mat) 
+#gènes en commun entre matrix et données normalisées
+
+#exprs.norm <- PLIER::rowNorm(exprs.mat)
+
+#set.k <- PLIER::num.pc(exprs.norm[cm.genes, ])
+
+#start<-proc.time()[3]
+#plierResult <- PLIER::PLIER(as.matrix(exprs.norm[cm.genes, ]),
+                            #as.matrix(BigM[cm.genes, ]),
+                            #k = round((set.k + set.k * 0.3), 0), 
+                            #trace = TRUE)
+#time<-proc.time()[3]-start #17 min
+
+#sauvegarde des résultats PLIER
+#save(plierResult,file="plierResult")
+load("plierResult")
+```
+
+## **Matrice U**   
+```{r U matrix}
+setwd("C:/Users/spety/OneDrive/Documents/M1_BIMS/Stage/Rstudio/docs_txt")
+
+#Chargement des résultats PLIER
+
+
+plierRes<-plierResult
+auc.cutoff=0.75
+fdr.cutoff=0.05
+indexCol=NULL
+indexRow=NULL
+if(is.null(indexCol)){
+  indexCol=1:ncol(plierRes$U)
+}
+if(is.null(indexRow)){
+  indexRow=1:nrow(plierRes$U)
+}
+top=3
+sort.row=F
+U=plierRes$U
+pval.cutoff=max(plierRes$summary[plierRes$summary[,5]<fdr.cutoff,4])
+U[plierRes$Uauc<auc.cutoff]=0
+U[plierRes$Up>pval.cutoff]=0
+
+U=U[indexRow, indexCol]
+for ( i in 1:ncol(U)){
+  ct=sort(U[,i],T)[top]
+  
+  U[U[,i]<ct,i]=0
+}
+
+scale=T
+trim.names=50
+cutoff=NULL
+col.scale=NULL
+matrix <- U
+
+if(! is.null(trim.names)){
+  rownames(matrix)=strtrim(rownames(matrix), trim.names)
+  colnames(matrix)=strtrim(colnames(matrix), trim.names)
+}
+if(!is.null(cutoff)){
+  matrix[abs(matrix)<cutoff]=0
+}
+matrix=matrix[iirow<-rowSums(abs(matrix))>0,]
+matrix=matrix[,iicol<-colSums(abs(matrix))>0]
+
+mydistBin=function(x){dist(abs(sign(x)))}
+
+mydistBin=function(x){dist(abs(sign(x)))}
+
+if(scale){
+  
+  aa=apply(abs(matrix),2, max)
+  aa[aa==0]=1
+  
+  matrix=sweep(matrix,2,aa, "/")
+  
+}
+if (min(matrix)<0)
+  mycol= c("grey90",colorRampPalette(rev(brewer.pal(n = 7, "RdYlBu")))(100)) else 
+    mycol=c("white",colorRampPalette(rev(brewer.pal(n = 11, name =  "PRGn"))[7:11])(100))
+if(!is.null(col.scale)){
+  mycol=colscale
+}
+
+pheatmap(matrix,color =mycol)
+
+```
+  
+## **Variables latentes**   
+
+### **Summary LV prior information**
+```{r PCA,cache=TRUE}
+
+abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
+
+biotic=c("BIOTROPHIC.BACTERIA","FUNGI","NECROTROPHIC.BACTERIA","NEMATODES","OOMYCETE","OTHER-BIOTIC","RHODOCOCCUS","STIFENIA","VIRUS")
+
+#-----------------------------------------------------------------------------#
+                          #Tableaux variables latentes
+#-----------------------------------------------------------------------------#
+
+plier.summary=plierResult$summary
+lv.auc <- 
+  as.integer(unique(plier.summary$`LV index`[which(plier.summary$AUC > 0.75)]))
+summary.prior=plier.summary[which(plier.summary$AUC > 0.75),]
+path.prior=summary.prior$pathway
+
+nb.genes=c()
+db=c()
+for(l in 1:length(path.prior)){
+  col.path=which(colnames(BigM)==path.prior[l])
+  nb.genes[l]=sum(BigM[,col.path])
+  db[l]= database[col.path]
+}
+
+summary.prior=cbind(summary.prior,nb.genes,db)
+colnames(summary.prior)[colnames(summary.prior) == "nb.genes"] <- "Nb genes"
+colnames(summary.prior)[colnames(summary.prior) == "db"] <- "Database"
+knitr::kable(summary.prior,align='c')%>%kable_styling("striped")
+
+
+LV.index=(unique(plier.summary$`LV index`[which(plier.summary$AUC > 0.75)]))
+
+names=c()
+for(t in 1:length(lv.auc)){
+  search=paste("^",lv.auc[t],",",sep="")
+  names[t]=grep(search,rownames(plierResult[["B"]]), perl=TRUE, value=TRUE)
+}
+
+
+  cat("\n")    
+  pander::pandoc.header(paste0("**ACP**"), level = 3)  
+#-----------------------------------------------------------------------------#
+                          #Toutes les variables latentes
+#-----------------------------------------------------------------------------#
+b.matrix=as.matrix(plierResult$B)
+colnames(b.matrix)<-Stress
+b.biotic=b.matrix[,which(colnames(b.matrix) %in% biotic)]
+b.abiotic=b.matrix[,which(colnames(b.matrix) %in% abiotic)]
+
+#-----------------------------------------------------------------------------#
+                                      #Abiotic
+#-----------------------------------------------------------------------------#
+all.lv.pc1 <- prcomp(t(b.abiotic))
+cum.var.exp1 <- cumsum(all.lv.pc1$sdev^2 / sum(all.lv.pc1$sdev^2))
+
+# PC1-2 in form suitable for ggplot2
+all.lv.df1 <- as.data.frame(cbind(rownames(all.lv.pc1$x),
+                                 all.lv.pc1$x[, 1:2]))
+
+index1=which(Stress %in% abiotic)
+SampleID1=SampleID[index1]
+Stress1=Stress[index1]
+all.lv.df1[,1]<-SampleID1
+colnames(all.lv.df1)[1] <- "SampleID"
+all.lv.df1=cbind(Stress1,all.lv.df1)
+# add dataset of origin info
+all.lv.df1 <-   all.lv.df1 %>% dplyr::mutate(PC1 = as.numeric(as.character(PC1)),
+                PC2 = as.numeric(as.character(PC2)),
+                Dataset = factor(Stress1))
+
+all.plot1 <- 
+  ggplot2::ggplot(all.lv.df1, ggplot2::aes(x = PC1, y = PC2, colour = Dataset)) +
+    ggplot2::geom_point(alpha = 0.5) +
+    ggplot2::theme_bw() +
+    ggplot2::labs(x = paste0("PC1 (cum var exp = ", 
+                             round(cum.var.exp1[1], 3), ")"),
+                  y = paste0("PC2 (cum var exp = ", 
+                             round(cum.var.exp1[2], 3), ")"), 
+                  title = "All Latent Variables : stress abiotiques") +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, 
+                                                      face = "bold",
+                                                      size=8))
+
+#-----------------------------------------------------------------------------#
+                                      #Biotic
+#-----------------------------------------------------------------------------#
+all.lv.pc2 <- prcomp(t(b.biotic))
+cum.var.exp2 <- cumsum(all.lv.pc2$sdev^2 / sum(all.lv.pc2$sdev^2))
+
+# PC1-2 in form suitable for ggplot2
+all.lv.df2 <- as.data.frame(cbind(rownames(all.lv.pc2$x),
+                                 all.lv.pc2$x[, 1:2]))
+
+index2=which(Stress %in% biotic)
+SampleID2=SampleID[index2]
+Stress2=Stress[index2]
+all.lv.df2[,1]<-SampleID2
+colnames(all.lv.df2)[1] <- "SampleID"
+all.lv.df2=cbind(Stress2,all.lv.df2)
+# add dataset of origin info
+all.lv.df2 <-   all.lv.df2 %>% dplyr::mutate(PC1 = as.numeric(as.character(PC1)),
+                PC2 = as.numeric(as.character(PC2)),
+                Dataset = factor(Stress2))
+
+all.plot2 <- 
+  ggplot2::ggplot(all.lv.df2, ggplot2::aes(x = PC1, y = PC2, colour = Dataset)) +
+    ggplot2::geom_point(alpha = 0.5) +
+    ggplot2::theme_bw() +
+    ggplot2::labs(x = paste0("PC1 (cum var exp = ", 
+                             round(cum.var.exp2[1], 3), ")"),
+                  y = paste0("PC2 (cum var exp = ", 
+                             round(cum.var.exp2[2], 3), ")"), 
+                  title = "All Latent Variables : stress biotiques") +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, 
+                                                      face = "bold",
+                                                      size=8))
+
+
+#-----------------------------------------------------------------------------#
+                      #Variables latentes associées à pathway seulement
+#-----------------------------------------------------------------------------#
+lv.auc <- 
+  as.integer(unique(plier.summary$`LV index`[which(plier.summary$AUC > 0.70)]))
+sig.b.mat <- b.matrix[lv.auc, ]
+b.biotic2=sig.b.mat[,which(colnames(sig.b.mat) %in% biotic)]
+b.abiotic2=sig.b.mat[,which(colnames(sig.b.mat) %in% abiotic)]
+
+#-----------------------------------------------------------------------------#
+                                      #Abiotiques
+#-----------------------------------------------------------------------------#
+
+path.lv.pc3 <- prcomp(t(b.abiotic2))
+cum.var.exp3 <- cumsum(path.lv.pc3$sdev^2 / sum(path.lv.pc3$sdev^2))
+# PC1-2 in form suitable for ggplot2
+path.lv.df3 <- as.data.frame(cbind(rownames(path.lv.pc3$x),
+                                 path.lv.pc3$x[, 1:2]))
+
+index3=which(Stress %in% abiotic)
+SampleID3=SampleID[index3]
+Stress3=Stress[index3]
+path.lv.df3[,1]<-SampleID3
+colnames(path.lv.df3)[1] <- "SampleID"
+path.lv.df3=cbind(Stress3,path.lv.df3)
+
+# add dataset of origin info
+path.lv.df3 <- path.lv.df3 %>%
+  dplyr::mutate(PC1 = as.numeric(as.character(PC1)),
+                PC2 = as.numeric(as.character(PC2)),
+                Dataset = factor(Stress3)) 
+
+path.plot1 <- 
+  ggplot2::ggplot(path.lv.df3, ggplot2::aes(x = PC1, y = PC2, 
+                                           colour = Dataset)) +
+  ggplot2::geom_point(alpha = 0.5) +
+  ggplot2::theme_bw() +
+  ggplot2::labs(x = paste0("PC1 (cum var exp = ", 
+                           round(cum.var.exp3[1], 3), ")"),
+                y = paste0("PC2 (cum var exp = ", 
+                           round(cum.var.exp3[2], 3), ")"),
+                title = "Pathway-associated Latent Variables (AUC > 0.75)\nAbiotic Stress") +
+  ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, 
+                                                    face = "bold",
+                                                    size=8))
+
+#-----------------------------------------------------------------------------#
+                                      #Biotiques
+#-----------------------------------------------------------------------------#
+
+path.lv.pc4 <- prcomp(t(b.biotic2))
+cum.var.exp4 <- cumsum(path.lv.pc4$sdev^2 / sum(path.lv.pc4$sdev^2))
+# PC1-2 in form suitable for ggplot2
+path.lv.df4 <- as.data.frame(cbind(rownames(path.lv.pc4$x),
+                                 path.lv.pc4$x[, 1:2]))
+
+index4=which(Stress %in% biotic)
+SampleID4=SampleID[index4]
+Stress4=Stress[index4]
+path.lv.df4[,1]<-SampleID4
+colnames(path.lv.df4)[1] <- "SampleID"
+path.lv.df4=cbind(Stress4,path.lv.df4)
+
+# add dataset of origin info
+path.lv.df4 <- path.lv.df4 %>%
+  dplyr::mutate(PC1 = as.numeric(as.character(PC1)),
+                PC2 = as.numeric(as.character(PC2)),
+                Dataset = factor(Stress4)) 
+
+path.plot2 <- 
+  ggplot2::ggplot(path.lv.df4, ggplot2::aes(x = PC1, y = PC2, 
+                                           colour = Dataset)) +
+  ggplot2::geom_point(alpha = 0.5) +
+  ggplot2::theme_bw() +
+  ggplot2::labs(x = paste0("PC1 (cum var exp = ", 
+                           round(cum.var.exp3[1], 3), ")"),
+                y = paste0("PC2 (cum var exp = ", 
+                           round(cum.var.exp3[2], 3), ")"),
+                title = "Pathway-associated Latent Variables (AUC > 0.75)\nBiotic Stress") +
+  ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, 
+                                                    face = "bold",
+                                                    size= 8))
+
+grid=plot_grid(all.plot1 + theme(legend.position="none"),
+               path.plot1 + theme(legend.position="none"),
+               all.plot2 + theme(legend.position="none"),
+               path.plot2 + theme(legend.position="none"), ncol=2)
+
+legend <- get_legend(all.plot1 + theme(legend.box.margin = margin(0, 0, 0, 12),
+                                       legend.text=element_text(size=5),
+                                       legend.title = element_text(size=9)))
+legend2 <- get_legend(all.plot2 + theme(legend.box.margin = margin(0, 0, 0, 12),
+                                        legend.text=element_text(size=5),
+                                        legend.title=element_text(size=9)))
+grid2=plot_grid(legend,legend2,ncol=1)
+plot_grid(grid,grid2,rel_widths = c(2.5, .6))
+```
+  
+```{r boxplot,cache=TRUE}
+lv.auc <- 
+  as.integer(unique(plier.summary$`LV index`[which(plier.summary$AUC > 0.75)]))
+LV=plier.summary$`LV index`[which(plier.summary$AUC > 0.75)]
+sig.b.mat <- b.matrix[lv.auc, ]
+b_long=t(sig.b.mat)
+b_long=as.data.frame(cbind(rownames(b_long),b_long))
+dim=dim(b_long)[2]
+colnames(b_long)[colnames(b_long) == "V1"] <- "Stress"
+b_long[,c(2:dim)] = apply(b_long[,c(2:dim)], 2,as.numeric)
+b_long=b_long%>%pivot_longer(cols=c(2:dim),
+                                     names_to = "LV",
+                                     values_to = "Values")
+
+#-----------------------------------------------------------------------------#
+                                      #Biotiques
+#-----------------------------------------------------------------------------#
+  cat("\n")    
+  pander::pandoc.header(paste0("**Boxplots LV, stress biotiques**"), level = 3)
+  
+b.biotic2=sig.b.mat[,which(colnames(sig.b.mat) %in% biotic)]
+b.biotic2=t(b.biotic2)
+b.biotic2=as.data.frame(cbind(rownames(b.biotic2),b.biotic2))
+colnames(b.biotic2)[colnames(b.biotic2) == "V1"] <- "Stress"
+b.biotic2[,c(2:dim)] = apply(b.biotic2[,c(2:dim)], 2,as.numeric)
+biotic_long=b.biotic2%>%pivot_longer(cols=c(2:dim),
+                                     names_to = "LV",
+                                     values_to = "Values")
+
+for(m in 1:length(names)){
+  p<-ggplot(biotic_long[which(biotic_long[,2]==names[m]),]) +
+     geom_boxplot(aes(x=Stress, y = Values),outlier.shape = NA) +
+     ggtitle(paste("Boxplot LV's \n Biotiques: ",names[m])) + 
+     xlab("Stress")+
+     scale_x_discrete(labels=c("Biotrophic","Fungi","Necrotrophic","Nematode","Oomycete","Other","Rhodococcus","Stifenia","Virus"))+
+     geom_jitter((aes(x=Stress, y = Values,colour=Stress)),alpha=0.8,shape=3)+
+     theme(legend.position = "none")
+  
+  print(p)
+}
+
+
+#-----------------------------------------------------------------------------#
+                                      #Abiotiques
+#-----------------------------------------------------------------------------#
+  cat("\n")    
+  pander::pandoc.header(paste0("**Boxplots LV, stress abiotiques**"), level = 3)  
+  
+b.abiotic2=sig.b.mat[,which(colnames(sig.b.mat) %in% abiotic)]
+b.abiotic2=t(b.abiotic2)
+b.abiotic2=as.data.frame(cbind(rownames(b.abiotic2),b.abiotic2))
+colnames(b.abiotic2)[colnames(b.abiotic2) == "V1"] <- "Stress"
+b.abiotic2[,c(2:dim)] = apply(b.abiotic2[,c(2:dim)], 2,as.numeric)
+abiotic_long=b.abiotic2%>%pivot_longer(cols=c(2:dim),
+                                     names_to = "LV",
+                                     values_to = "Values")
+
+for(m in 1:length(names)){
+  p<-ggplot(abiotic_long[which(abiotic_long[,2]==names[m]),]) +
+     geom_boxplot(aes(x=Stress, y = Values),outlier.shape = NA) +
+     ggtitle(paste("Boxplot LV's \n Abiotiques: ",names[m])) + 
+     xlab("Stress")+
+     scale_x_discrete(labels=c("Drought","Gamma","Heavy M","Nitrogen","Other","Oxydative","Salt","Temperature","UV"))+
+     geom_jitter((aes(x=Stress, y = Values,colour=Stress)),alpha=0.8,shape=3)+
+     theme(legend.position = "none")
+  
+  print(p)
+}
+
+
+
+```
+  
+```{r latex table,results='asis'}
+latex=matrix(0,ncol=dim(plier.summary)[2],nrow=1)
+colnames(latex)=colnames(plier.summary)
+for(q in 1:length(names)){
+  split=strsplit(names[q],split=",")
+  latex1=plier.summary[which(plier.summary$`LV index`==unlist(split)[1] & plier.summary$pathway==unlist(split)[2]),]
+  latex=rbind(latex,latex1)
+}
+
+latex=latex[-1,]
+latex=rbind(latex,plier.summary[grep("Phenylalanine,",plier.summary$pathway),])
+latex=latex[order(as.numeric(latex$`LV index`)),]
+latex$AUC=round(latex$AUC,3)
+latex$`p-value`=format(latex$`p-value`,scientific=TRUE,digits=3)
+latex$FDR=format(latex$FDR,scientific=TRUE,digits=3)
+
+summary.prior$AUC=round(summary.prior$AUC,3)
+summary.prior$`p-value`=format(summary.prior$`p-value`,scientific=TRUE,digits=3)
+summary.prior$FDR=format(summary.prior$FDR,scientific=TRUE,digits=3)
+
+table=(knitr::kable(latex,format="latex"))
+table2=(knitr::kable(summary.prior,format="latex"))
+```
+
+### **ANOVA**  
+  
+```{r ANOVA}
+#https://www.datanovia.com/en/fr/lessons/anova-dans-r/#preparation-des-donnees
+
+  cat("\n")    
+  pander::pandoc.header(paste0("**Valeurs aberrantes**"), level = 4)
+  
+biotic_long %>%
+ group_by(Stress, LV) %>%
+  identify_outliers(Values)
+
+  cat("\n")    
+  pander::pandoc.header(paste0("**Hypothèse de normalité (QQplot & test de Shapiro)**"), level = 4)
+  
+# Construire le modèle linéaire
+model  <- lm(Values ~ Stress*LV,
+             data = biotic_long)
+# Créer un QQ plot des résidus
+ggqqplot(residuals(model))
+
+# Calculer le test de normalité de Shapiro-Wilk
+shapiro_test(residuals(model))
+
+#Pas de normalité...
+
+biotic_long %>%
+  group_by(Stress, LV) %>%
+  shapiro_test(Values)
+
+ggqqplot(biotic_long, "Values", ggtheme = theme_bw()) +
+  facet_grid(Stress ~ LV)
+
+  cat("\n")    
+  pander::pandoc.header(paste0("**Test de Levene**"), level = 4)
+
+#h0 : non homogénéité des variances | h1 : homogénéité des variances
+biotic_long %>% levene_test(Values ~ Stress*LV)
+
+  cat("\n")    
+  pander::pandoc.header(paste0("**ANOVA calculs**"), level = 4)
+  
+res.aov <- biotic_long %>% anova_test(Values ~ Stress * LV)
+res.aov
+
+  cat("\n")    
+  pander::pandoc.header(paste0("**Calculs des effets principaux**"), level = 4)
+  
+model <- lm(Values ~ Stress * LV, data = biotic_long)
+biotic_long %>%
+  group_by(LV) %>%
+  anova_test(Values ~ Stress, error = model)
+
+  cat("\n")    
+  pander::pandoc.header(paste0("**Comparaison par paires**"), level = 4)
+  
+# comparaisons par paires
+pwc <- biotic_long %>% 
+  group_by(LV) %>%
+  emmeans_test(Values ~ Stress, p.adjust.method = "bonferroni") 
+pwc
+```
+  
+## **Nouvelles données**  
+
+**Une fois les variables latentes significatives sélectionnées, nous avons pu noter que l'effet stres n'est pas significatif ici, afin d'aller plus loin dans l'analyse de ces LV, nous allons utiliser de nouveaux jeu de données Arabidopsis issu d'analyse de puce CATMA, a priori similaires aux données GEM2Net. **
+
+```{r new data photo}
+setwd("C:/Users/spety/OneDrive/Documents/M1_BIMS/Stage/Rstudio/docs_txt")
+#https://www.bioconductor.org/packages/release/bioc/vignettes/GEOquery/inst/doc/GEOquery.html
+
+library(GEOquery)
+library(limma)
+library(umap)
+library(tidyverse)
+
+gset <- getGEO("GSE22982", GSEMatrix =TRUE, getGPL=FALSE)
+if (length(gset) > 1) idx <- grep("GPL10840", attr(gset, "names")) else idx <- 1
+gset <- gset[[idx]]
+
+ex <- exprs(gset)
+ex=as.data.frame(ex)
+
+
+#-----------------------------------------------------------------------------------#
+                                #Tableau convertion CatmaID/GeneID
+#-----------------------------------------------------------------------------------#
+design=read.table("GEO_photo.txt",fill=TRUE,header=TRUE,sep="\t")
+design=design[,c(1,3,4)]
+design$Gene <-paste(design$TAIR9_best,design$TAIR9_others,sep=";")
+design=separate_rows(design,Gene,sep=';')
+design=design[,c(-2,-3)]
+design=design[-which(design$Gene==""),]
+
+ID=rownames(ex)
+ex=cbind(ID,ex)
+
+ex=inner_join(ex,design,by="ID")
+ex=ex[,-1]
+ex=aggregate(x=ex[c(1:22)], by=list(name=ex$Gene), mean, na.rm = TRUE)
+rownames(ex)=ex$name
+ex=ex[,-1]
+
+#-----------------------------------------------------------------------------#
+                              #GetOrderedRowNorm
+#-----------------------------------------------------------------------------#
+
+# first, row normalize the new expression data
+exprs.norm <- PLIER::rowNorm(ex)
+#removing Na, NaN values
+exprs.norm=exprs.norm[complete.cases(exprs.norm),]
+  # get Z matrix from PLIER model
+z.mat <- plierResult$Z
+#what genes were used in the model?
+genes.in.model <- rownames(z.mat)
+  
+  # get the genes that are common to the PLIER model and the new expression
+  # data
+exprs.cg <- exprs.norm[which(rownames(exprs.norm) %in% genes.in.model), ]
+  
+  # add in genes that are missing in the new exprs data 
+genes.not.exprs <-genes.in.model[which(!(genes.in.model %in% rownames(exprs.norm)))]
+#set all to zero -- this is the mean, due to z-scoring
+miss.mat <- matrix(0, ncol = ncol(exprs.cg), nrow = length(genes.not.exprs))
+  
+# set gene names (rownames) to missing gene names
+rownames(miss.mat) <- genes.not.exprs
+  # set colnames to the same as the expression matrix for genes present in
+  # exprs.mat
+colnames(miss.mat) <- colnames(exprs.cg)
+  # add into common gene expression matrix
+exprs.cg <- rbind(exprs.cg, miss.mat)
+  # reorder rows
+ord.rownorm <- exprs.cg[genes.in.model, ]
+  
+  # check reordering
+gene.ord.chk <- all.equal(rownames(ord.rownorm), rownames(z.mat))
+
+#-----------------------------------------------------------------------------#
+                              #GetNewDataB
+#-----------------------------------------------------------------------------#
+  
+  # get Z matrix from PLIER model
+z.mat <- plierResult$Z
+  
+  # get LV by sample (B) matrix from the new exprs using PLIER model
+  # https://github.com/wgmao/PLIER/blob/a2d4a2aa343f9ed4b9b945c04326bebd31533d4d/R/Allfuncs.R#L465
+exprs.new.b <-
+    solve(t(z.mat) %*% z.mat + plierResult$L2 * diag(ncol(z.mat))) %*%
+t(z.mat) %*% as.matrix(ord.rownorm)
+  
+  # add in the rownames from the PLIER model B matrix
+rownames(exprs.new.b) <- rownames(plierResult$B)
+  
+#Apply a previously computed PLIER to a new dataset to get the LV x sample
+new.b.mat.photo <- as.data.frame(exprs.new.b)
+
+
+```
+
+```{r B2}
+#On récupère les données du modèle PLIER, la matrice B
+b.plier=b_long[,-1]
+b.plier=cbind(rep("Model",length(b.plier$LV)),b.plier)
+colnames(b.plier)=c("Data","LV","Values")
+
+#-----------------------------------------------------------------------------#
+                              #Matrice Photo
+#-----------------------------------------------------------------------------#
+b.photo=as.data.frame(cbind(rownames(new.b.mat.photo),new.b.mat.photo))
+b.photo=b.photo%>%pivot_longer(cols=c(2:23),
+                                     names_to = "Samples",
+                                     values_to = "Values")
+b.photo=b.photo[,-2]
+Jour=rep(c(1:11),each=2)
+Heure=c("AM","PM","AM","PM","AM","PM","AM","PM","AM","PM","AM","PM","AM","PM","AM","PM","AM","PM","AM","PM","AM","PM")
+jour_heure=paste(Heure,Jour)
+b.photo=cbind(rep("Photosynthese",length(b.photo[,1])),b.photo,Jour,Heure)
+colnames(b.photo)=c("Data","LV","Values","Jour","Heure")
+```
+
+```{r Heatmap,fig.width=12}
+setwd("C:/Users/spety/OneDrive/Documents/M1_BIMS/Stage/figures")
+#-----------------------------------------------------------------------------#
+                              #Boxplots pour photosynthèse
+#-----------------------------------------------------------------------------#
+ cat("\n")    
+  pander::pandoc.header(paste0("**NCBI photosynthèse**"), level = 3) 
+
+   cat("\n")    
+  pander::pandoc.header(paste0("**Heatmap**"), level = 4)
+    colnames(new.b.mat.photo)=jour_heure
+    mat_AM=new.b.mat.photo[which(rownames(new.b.mat.photo)%in%names),seq(1,21,by=2)]
+    mat_PM=new.b.mat.photo[which(rownames(new.b.mat.photo)%in%names),seq(2,22,by=2)]
+    
+    ht1=Heatmap(as.matrix(mat_AM),show_heatmap_legend = FALSE,cluster_columns = FALSE,row_names_max_width = unit(10, "cm"))
+    ht1
+    ht2=Heatmap(as.matrix(mat_PM), name = "Values",cluster_columns = FALSE,row_names_max_width = unit(10, "cm"))
+
+    ht_list = ht1 + ht2
+    draw(ht_list,heatmap_legend_side="left")
+    
+```
+
+```{r box photo,fig.width=15,fig.height=20}
+  
+     cat("\n")    
+  pander::pandoc.header(paste0("**Plots**"), level = 4)
+
+ggplot(b.photo[which(b.photo$LV %in% names),]) +
+             geom_line(aes(x=Jour, y = Values,colour=Heure)) +
+             scale_x_continuous("Day",breaks=c(1:11))+
+             facet_wrap(~LV)+
+             theme_minimal()+
+             scale_size_manual(values=c(1.5, 1.5))+
+             theme(plot.title = element_text(size=20,face="bold"))+
+             geom_hline(yintercept=0, linetype="dashed", color = "red")
+
+```
+
+```{r box photo2}
+ggplot(b.photo[which(b.photo$LV == "1,Photosynthesis.1"),]) +
+             geom_line(aes(x=Jour, y = Values,colour=Heure)) +
+             scale_x_continuous("Day",breaks=c(1:11))+
+             theme_minimal()+
+             ggtitle("1,Photosynthesis.1")+
+             xlab("Day")+
+             ylab("Values")+
+             scale_size_manual(values=c(1.5, 1.5))+
+             theme(plot.title = element_text(size=20,face="bold"))+
+             geom_hline(yintercept=0, linetype="dashed", color = "red")
+
+```
+
+```{r end,collapse = TRUE,results='hold'}
+sessionInfo()
+```

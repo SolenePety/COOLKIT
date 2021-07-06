@@ -2,3 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
+
+# repository  "subsets"
+/data/subsets
+
+# produced html in scripts
+*.html
+!/results/report_abiotic.html
+!/results/report_biotic.html
+
