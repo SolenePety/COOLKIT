@@ -1,44 +1,44 @@
-#------------------------------------------------------------------------------#
-#Auteur : Solène Pety
-
-#03/2021
-
-#Stage INRAE - M1 COOLKIT - Estrées-Mons
-#------------------------------------------------------------------------------#
-
-#------------------------------------------------------------------------------#
-                  # Création des fichiers utilisé pour les .Rmd
-#------------------------------------------------------------------------------#
-
-#Répertoire contenant l'ensemble des Gene Set, .dat et informations .txt utiles
-setwd("~/M1_BIMS/Stage/Rstudio/docs_txt/")
+if (file.exists(subDir)){
+  setwd(file.path(mainDir, subDir))
+} else {
+  dir.create(file.path(mainDir, subDir))
+  setwd(file.path(mainDir, subDir))
+  
+}
 
 #------------------------------------------------------------------------------#
-                            # Chargement des données
+                  # Cr?ation des fichiers utilis? pour les .Rmd
 #------------------------------------------------------------------------------#
 
-#Données GEM2Net : 387 échantillons correspondant à 387 expériences en condition 
-#de stress avec des paramètres différents
+#R?pertoire contenant l'ensemble des Gene Set, .dat et informations .txt utiles
+
+
+#------------------------------------------------------------------------------#
+                            # Chargement des donn?es
+#------------------------------------------------------------------------------#
+
+#Donn?es GEM2Net : 387 ?chantillons correspondant ? 387 exp?riences en condition 
+#de stress avec des param?tres diff?rents
 data=read.table("Gene_Swap_NO_NA.dat",header=TRUE,sep="\t")
 
 #Tableau information :
 #5 colonnes : stress, order, swap_id, swap_name, project_ID
-#54 projets différents
+#54 projets diff?rents
 data2=read.table("SONATA_Ordres_ML.txt",header=TRUE,sep="\t")
 
-#Données Go SLIM : 
-#Colonnes d'intérêts : colonne 1 = gene ID (AT_....), colonne 9 = GO SLIM
+#Donn?es Go SLIM : 
+#Colonnes d'int?r?ts : colonne 1 = gene ID (AT_....), colonne 9 = GO SLIM
 data3=read.table("ATH_GO_GOSLIM.txt",header=TRUE,sep="\t",skip=4,fill=TRUE)
 
 
 #------------------------------------------------------------------------------#
-              #Création table avec l'ensemble des informations utiles
+              #Cr?ation table avec l'ensemble des informations utiles
 #------------------------------------------------------------------------------#
 #Colonne 1 = Project_ID
 #Colonne 2 = Stress
 #Colonne 3 = Swap_ID
-#Autres = Gènes, données puces (17341 colonnes)
-#col_names = ensemble des gènes présent dans données GEM2Net
+#Autres = G?nes, donn?es puces (17341 colonnes)
+#col_names = ensemble des g?nes pr?sent dans donn?es GEM2Net
 
 ID=data[,1]
 vec=c()
