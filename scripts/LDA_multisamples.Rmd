@@ -1,0 +1,642 @@
+---
+title: "Linear Discriminant Analysis - 10 échantillons"
+author: "Solène Pety"
+date: "27/04/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
+```
+
+
+```{r init}
+library(FactoMineR)
+library(factoextra)
+library("corrplot")
+library(ggsci)
+library(plotly)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(pander)
+library(knitr)
+library(vegan)
+library(MASS)
+library(RColorBrewer) #Palettes
+library(prodlim)
+library(scales)
+library(ggplotify)
+library(kableExtra)
+library(ComplexHeatmap)
+library(forcats)
+library(gridExtra)
+library(viridis)
+library(cowplot)
+library(ComplexUpset)
+```
+  
+# **Détails échantillons projetés**  
+
+```{r sample,cache=TRUE}
+setwd("../docs_txt/")
+
+abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
+
+files=c("circadian_rythm.txt","photo.txt","DEGDROUGHT.txt",
+        "DEGGAMMA.txt","DEGOTHER.ABIOTIC.txt","DEGSALT.txt")
+
+name=c("Circadian rythm","Photosynthesis","Drought",
+       "Gamma","Other abiotic","Salt")
+
+raw_data=read.table("table_data.txt",header=TRUE,sep='\t',check.names = FALSE)
+raw_abiotic=raw_data[raw_data[,2] %in% abiotic, ]
+
+#--------------------------------------------------------------------------------------------------#
+                                              # Création échantillons
+#--------------------------------------------------------------------------------------------------#  
+
+#Echantillon 1
+set.seed(123)
+  sample1=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample1[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table1=raw_abiotic[sample1,1:3]
+colnames(sample_table1)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table1)<-c(1:9)
+ 
+ 
+#Echantillon 2
+ set.seed(1)
+  sample2=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample2[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table2=raw_abiotic[sample2,1:3]
+colnames(sample_table2)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table2)<-c(1:9)
+
+
+#Echantillon 3
+ set.seed(3)
+  sample3=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample3[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table3=raw_abiotic[sample3,1:3]
+colnames(sample_table3)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table3)<-c(1:9)
+
+
+#Echantillon 4
+ set.seed(4)
+  sample4=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample4[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table4=raw_abiotic[sample4,1:3]
+colnames(sample_table4)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table4)<-c(1:9)
+ 
+
+#Echantillon 5
+ set.seed(5)
+  sample5=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample5[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table5=raw_abiotic[sample5,1:3]
+colnames(sample_table5)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table5)<-c(1:9)
+
+ 
+#Echantillon 6
+ set.seed(6)
+  sample6=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample6[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table6=raw_abiotic[sample6,1:3]
+colnames(sample_table6)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table6)<-c(1:9)
+ 
+
+#Echantillon 7
+ set.seed(7)
+  sample7=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample7[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table7=raw_abiotic[sample7,1:3]
+colnames(sample_table7)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table7)<-c(1:9)
+ 
+
+#Echantillon 8
+ set.seed(8)
+  sample8=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample8[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table8=raw_abiotic[sample8,1:3]
+colnames(sample_table8)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table8)<-c(1:9)
+
+ 
+#Echantillon 9
+ set.seed(9)
+  sample9=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample9[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table9=raw_abiotic[sample9,1:3]
+colnames(sample_table9)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table9)<-c(1:9)
+
+ 
+#Echantillon 10
+ set.seed(10)
+  sample10=c()
+  for(i in 1:9){
+    data_short=raw_abiotic[which(raw_abiotic[,2]==abiotic[i]),]
+    sample10[i]=row.names(data_short[sample(1:nrow(data_short), 1), ])
+  }
+
+sample_table10=raw_abiotic[sample10,1:3]
+colnames(sample_table10)<-c("Project ID","Stress","Swap ID")
+rownames(sample_table10)<-c(1:9)
+
+
+#--------------------------------------------------------------------------------------------------#
+                                              # Tableau détails
+#--------------------------------------------------------------------------------------------------#     
+ samples=list(sample1,sample2,sample3,sample4,sample5,sample6,sample7,sample8,sample9,sample10)
+
+ knitr::kables(
+   list(
+     knitr::kable(sample_table1,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray"),
+     knitr::kable(sample_table2,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray"),
+     knitr::kable(sample_table3,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray")
+   ),
+   caption="Summary des 10 sets d\'échantillons à prédire")
+ 
+ knitr::kables(
+   list(
+     knitr::kable(sample_table4,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray"),
+     knitr::kable(sample_table5,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray"),
+     knitr::kable(sample_table6,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray")
+   ))
+ 
+ knitr::kables(
+   list(
+     knitr::kable(sample_table7,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray"),
+     knitr::kable(sample_table8,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray"),
+     knitr::kable(sample_table9,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray"),
+     knitr::kable(sample_table10,align='c')%>%kable_styling("striped")%>%column_spec(column = 1,border_left = "2px solid gray",border_right = FALSE)%>%column_spec(column = 3,border_left = FALSE,border_right = "2px solid gray")
+   ))
+
+```
+
+# **Gene Set**  
+
+```{r calculs ACP}
+setwd("../docs_txt/")
+
+#initialisation des matrices chunk
+matrix=matrix(0,nrow=1,ncol=9)
+matrix_prob_ACP=matrix(0,nrow=length(files),ncol=9)
+
+#--------------------------------------------------------------------------------------------------#
+                                              # Boucle fichier
+#--------------------------------------------------------------------------------------------------#  
+for(i in 1:length(files)){
+  #initialisation variables boucle
+  table_prob=data.frame(rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9))
+  match=c(0,0,0,0,0,0,0,0,0)
+  
+  #Lecture fichier
+  data=read.table(files[i],header=TRUE,sep='\t',check.names = FALSE)
+  
+#--------------------------------------------------------------------------------------------------#
+                                              # Boucle échantillons (10 tours)
+#--------------------------------------------------------------------------------------------------#  
+  for(j in 1:length(samples)){
+      #récupération échantillons abiotiques seulement
+      data_abiotic=data[data[,2] %in% abiotic, ]
+      #dataframe échantillons à projeter + supprimer rows correspondantes
+      set_test=data_abiotic[unlist(samples[j]),]
+      data_abiotic <- data_abiotic[- which(rownames(data_abiotic) %in%  unlist(samples[j])), ] 
+      rownames(set_test)<-c(1:9)
+    
+      #Calcul des coordonnées ACP
+      res1=PCA(data_abiotic[,c(-1,-3)],graph=FALSE,quali.sup=1)
+      #Déterminer nombre dimensions
+      dim=length(res1[["eig"]][which(res1[["eig"]][,3]<=91),3])
+      #Recalcul avec bon nombre de dimensions
+      #Pour matrice d'apprentissage
+      res1=PCA(data_abiotic[,c(-1,-3)],graph=FALSE,quali.sup=1,ncp = dim)
+      Coord=res1[["ind"]][["coord"]]
+      Coord=as.data.frame(Coord)
+      Coord=cbind(Stress=data_abiotic$vec,Coord)
+     
+      
+      #Pour échantillons à projeter
+      res2=predict.PCA(res1,set_test)
+      Coord_pred=res2[["coord"]]
+      Coord_pred=as.data.frame(Coord_pred)
+      Coord_pred=cbind(Stress=set_test$vec,Coord_pred)
+     
+      #Appel fonction lda avec équiprobabilité pour les stress
+      lda <- lda(Coord$Stress ~ ., 
+               Coord)
+      
+      #Echantillons à projeter
+      plda <- predict(object = lda,
+                    newdata = Coord_pred)
+    
+      table_prob=table_prob+as.data.frame(round(plda[["posterior"]],3))
+  }
+  
+#--------------------------------------------------------------------------------------------------#
+                                              # Matrice probabilitées par gene set
+#--------------------------------------------------------------------------------------------------# 
+  
+  table_prob=table_prob/length(samples)
+  rownames(table_prob)=colnames(table_prob)=abiotic
+
+  #Récupération diagonale matrice : probabilité attribution correcte des stress
+  diag=c(table_prob[1,1],table_prob[2,2],table_prob[3,3],
+         table_prob[4,4],table_prob[5,5],table_prob[6,6],
+         table_prob[7,7],table_prob[8,8],table_prob[9,9])
+
+  nam <- paste("diag_ACP_",name[i] , sep = "")
+  assign(nam,diag)
+}
+```
+
+```{r calculs one versus all}
+setwd("../docs_txt/")
+
+#initialisation des matrices chunk
+matrix=matrix(0,nrow=1,ncol=9)
+matrix_prob_one=matrix(0,nrow=length(files),ncol=9)
+
+#--------------------------------------------------------------------------------------------------#
+                                              # Boucle fichier
+#--------------------------------------------------------------------------------------------------#  
+for(i in 1:length(files)){
+  #initialisation variables boucle
+  table_prob=data.frame(rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9))
+  match=c(0,0,0,0,0,0,0,0,0)
+  
+  #Lecture fichier
+  data=read.table(files[i],header=TRUE,sep='\t',check.names = FALSE)
+
+#--------------------------------------------------------------------------------------------------#
+                                              # Boucle échantillons (10 tours)
+#--------------------------------------------------------------------------------------------------#   
+    for(j in 1:length(samples)){
+        #récupération échantillons abiotiques seulement
+        data_abiotic=data[data[,2] %in% abiotic, ]
+        #dataframe échantillons à projeter + supprimer rows correspondantes
+        set_test=data_abiotic[unlist(samples[j]),]
+        data_abiotic <- data_abiotic[- which(rownames(data_abiotic) %in% unlist(samples[j])), ] 
+        rownames(set_test)<-c(1:9)
+  
+        logset_test=set_test
+        logdata_abiotic=data_abiotic
+
+        #Boucle one versus all     
+        prob=matrix(0,nrow=9,ncol=9)
+        for(k in 1:length(abiotic)){
+          logdata_abiotic$vec <- ifelse(data_abiotic$vec==abiotic[k],1,0)
+          logset_test$vec <- ifelse(set_test$vec==abiotic[k],1,0)
+          logits <- lda(vec~.,data=logdata_abiotic)
+          pred <-  predict(logits, logset_test,type="response")
+          prob[k,]=round(pred[["posterior"]][,2],4)
+        }
+  
+        table_prob=table_prob+as.data.frame(prob)
+    }
+
+#--------------------------------------------------------------------------------------------------#
+                                              # Matrice probabilitées par gene set
+#--------------------------------------------------------------------------------------------------#    
+    table_prob=table_prob/length(samples)
+    rownames(table_prob)=colnames(table_prob)=abiotic
+
+    diag=c(table_prob[1,1],table_prob[2,2],table_prob[3,3],
+           table_prob[4,4],table_prob[5,5],table_prob[6,6],
+           table_prob[7,7],table_prob[8,8],table_prob[9,9])
+  
+    nam <- paste("diag_one_",name[i] , sep = "")
+    assign(nam,diag)
+}
+```
+
+```{r code,fig.width=13}
+setwd("../docs_txt/")  
+
+#initialisation des matrices chunk  
+matrix_prob=matrix(0,nrow=length(files),ncol=9)
+stress_long=matrix(0,nrow=1,ncol=4)
+matrix_binaire=matrix(0,nrow=1,ncol=9)
+
+#--------------------------------------------------------------------------------------------------#
+                                              # Boucle fichier
+#--------------------------------------------------------------------------------------------------#  
+for(i in 1:length(files)){
+  #initialisation variables boucle
+  table_prob=data.frame(rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9),rep(0,9))
+  match=c(0,0,0,0,0,0,0,0,0)
+  vec2=c(0,0,0,0,0,0,0,0,0)
+
+  #lecture fichier
+  data=read.table(files[i],header=TRUE,sep='\t',check.names = FALSE)
+  
+  
+  cat("\n")    
+  pander::pandoc.header(paste0(" **", name[i] ," (",dim(data)[2]-3," gènes)**\n"), level = 2)  
+
+#--------------------------------------------------------------------------------------------------#
+                                              # Boucle échantillons (10 tours)
+#--------------------------------------------------------------------------------------------------#
+ 
+   for(j in 1:length(samples)){
+      #récupération échantillons abiotiques seulement
+      data_abiotic=data[data[,2] %in% abiotic, ]
+      #dataframe échantillons à projeter + supprimer rows correspondantes
+      set_test=data_abiotic[unlist(samples[j]),]
+      data_abiotic <- data_abiotic[- which(rownames(data_abiotic) %in%  unlist(samples[j])), ] 
+      rownames(set_test)<-c(1:9)
+    
+      #Calcul des coordonnées ACP
+      
+      #Appel fonction lda avec équiprobabilité pour les stress
+      lda <- lda(data_abiotic$vec ~ ., 
+               data_abiotic)
+    
+      #Echantillons à projeter
+      plda <- predict(object = lda,
+                    newdata = set_test[,-2])
+    
+      table_prob=table_prob+as.data.frame(round(plda[["posterior"]],3))
+    
+     check=c()    
+     for(m in 1:9){
+       if(table_prob[m,m]==max(table_prob[m,])){
+         check[m]=1
+       }else{
+           check[m]=0
+         }
+     }
+     
+      vec2=vec2+check
+  }
+
+#--------------------------------------------------------------------------------------------------#
+                                              # Matrice probabilitées par gene set
+#--------------------------------------------------------------------------------------------------#  
+  
+      cat("\n")  
+      pander::pandoc.header(paste0(" **Matrice probabilitées**\n"), level = 3)
+      
+      cat("\n")  
+      pander::pandoc.header(paste0(" **Moyenne sur les 10 sets d'échantillons**\n"), level = 4)            
+###############################Matrice probabilité############## 
+     table_prob=table_prob/length(samples)
+     rownames(table_prob)=colnames(table_prob)=abiotic
+     print(knitr::kable(table_prob,digits=4,align = 'c')
+           %>%add_header_above(c(" "=1,"Catégories de stress" = 9))
+           %>%kable_styling("striped"))
+     
+
+     
+     matrix_binaire=rbind(matrix_binaire,vec2)
+     
+###############################Matrice proba par gene set/diagonale############
+     matrix_prob[i,]=c(table_prob[1,1],table_prob[2,2],table_prob[3,3],
+                       table_prob[4,4],table_prob[5,5],table_prob[6,6],
+                       table_prob[7,7],table_prob[8,8],table_prob[9,9])
+     
+     diag=c(table_prob[1,1],table_prob[2,2],table_prob[3,3],
+            table_prob[4,4],table_prob[5,5],table_prob[6,6],
+            table_prob[7,7],table_prob[8,8],table_prob[9,9])     
+
+#####################################Stacked barplot#######################
+     cat("\n")
+     pander::pandoc.header(paste0(" **Stacked Barplot**\n"), level = 3)
+
+     
+     table_long=table_prob%>%pivot_longer(cols=c(1:9),
+                                          names_to = "Cat",
+                                          values_to = "Prob") 
+     x=rep(c("DROUGHT","GAMMA","HEAVY M.",
+             "NITROGEN","OTHER ABIO","OXYDATIVE",
+             "SALT","TEMPERATURE","UV"),each=9)
+     table_long=cbind(x,table_long)
+     
+     set=rep(name[i],81)   
+     table_long_set=cbind(set,table_long)
+     colnames(stress_long)<-c("set","x","Cat","Prob")
+     stress_long=rbind(stress_long,table_long_set)
+  
+    
+     print(ggplot(table_long, aes(fill=Cat, y=Prob, x=x)) + 
+           geom_bar(position='stack', stat='identity') +
+           xlab("Catégorie de stress") +
+           ylab("Probabilité d'appartenance")+
+           scale_fill_manual(values = c("darkred","darkorange2","gold2",
+                                  "olivedrab2","forestgreen","cadetblue1",
+                                  "dodgerblue2","darkorchid3","darkslategray"))) 
+   
+     matrix=rbind(matrix,match)
+ 
+#--------------------------------------------------------------------------------------------------#
+                                              # ACP vs multiclasse
+#--------------------------------------------------------------------------------------------------#  
+ #Pour chaque tour on prend les diagonales correspondant au set et on plot les points
+    cat("\n")  
+    pander::pandoc.header(paste0(" **ACP vs multiclasse**\n"), level = 3)  
+ 
+    coord_acp=cbind(abiotic,as.numeric(get(paste("diag_ACP_",name[i],sep=""))),rep("ACP",9),c(1:9))
+    coord=cbind(abiotic,as.numeric(diag),rep("Données expression",9),c(1:9))
+    coord=rbind(coord_acp,coord)
+    coord=as.data.frame(coord)
+    colnames(coord)<-c("Stress","Probabilite","Groupe","line")
+ 
+    plot1=ggplot(coord, aes(x=Stress, y=as.numeric(Probabilite),color=Groupe,group=line))+
+         geom_point(aes(shape=Groupe),size=5)+
+         scale_shape_manual(values=c(16, 17))+
+         xlab("Catégories de stress")+
+         ylab("Probabilité")+
+         ggtitle("Comparaison ACP vs données expression")+
+         geom_line(color="black")+
+         scale_color_manual(values = c("darkred","dodgerblue2"))+
+         ylim(0,1)
+
+    print(plot1)
+
+      nam <- paste("comp1_",i, sep = "")
+      assign(nam,plot1)
+#--------------------------------------------------------------------------------------------------#
+                                              # One versus all vs multiclasse
+#--------------------------------------------------------------------------------------------------#  
+    cat("\n")  
+    pander::pandoc.header(paste0(" **One-versus-all vs multiclasse**\n"), level = 3)  
+     
+    coord_acp=cbind(abiotic,
+                    as.numeric(get(paste("diag_one_",name[i],sep=""))),
+                    rep("One vs all",9),c(1:9))
+    coord=cbind(abiotic,as.numeric(diag),rep("Multiclasse",9),c(1:9))
+    coord=rbind(coord_acp,coord)
+    coord=as.data.frame(coord)
+    colnames(coord)<-c("Stress","Probabilite","Groupe","line")
+ 
+    plot2=ggplot(coord, aes(x=Stress, y=as.numeric(Probabilite),color=Groupe,group=line))+
+         geom_point(aes(shape=Groupe),size=5)+
+         scale_shape_manual(values=c(17,16))+
+         xlab("Catégories de stress")+
+         ylab("Probabilité")+
+         ggtitle("Comparaison One-vs-All vs multiclasse")+
+         geom_line(color="black")+
+         scale_color_manual(values = c("dodgerblue2","darkred"))+
+         ylim(0,1)
+    print(plot2)
+    
+      nam2 <- paste("comp2_",i, sep = "")
+      assign(nam2,plot2)
+    
+}
+```
+
+```{r heatmap,fig.width=13}
+#--------------------------------------------------------------------------------------------------#
+                                              # Heatmap
+#--------------------------------------------------------------------------------------------------#  
+cat("\n")
+pander::pandoc.header(paste0(" **Heatmap Gene set **\n"), level = 2)
+
+matrix_binaire=matrix_binaire[-1,]
+rownames(matrix_prob) = rownames(matrix_binaire) <- c("Circadian rythm set","Photosynthesis set","Drought set","Gamma set","Other abiotic set","Salt set")
+colnames(matrix_prob) = colnames(matrix_binaire) <- abiotic
+
+ht1=Heatmap(matrix_prob, name = "Probabilité",col=viridis(30))
+
+ht2=Heatmap(matrix_binaire,name = "#correct MAP\nclassifications",col=viridis(30))
+
+ht_list = ht1 + ht2
+draw(ht_list)
+```
+
+## **Upset plot**
+```{r upset plot}
+# Chemin vers dossier fichiers .txt et chargement
+setwd("../docs_txt/")
+data=read.table('Gene_Swap_NO_NA.dat',header=TRUE,sep='\t')
+
+#Fichier à utiliser dans boucle
+files=c("circadian_rythm.txt","photo.txt","DEGDROUGHT.txt",
+        "DEGGAMMA.txt","DEGOTHER.ABIOTIC.txt","DEGSALT.txt")
+
+name=c("Circadian rythm","Photosynthesis","Drought",
+       "Gamma","Other abiotic","Salt")
+
+# Noms des colonnes sans les variables qualitatives
+Gene=noquote(colnames(data[,c(-1,-2,-3)]))
+
+matrix=cbind(rep(0,17341),Gene) #initialisation matrice
+
+#Remplacer 0 par TRUE ou FAlSE pour chaque gene set
+for(i in 1:6){
+  datago=read.table(files[i],header=TRUE,sep='\t')
+  colgo=noquote(colnames(datago[,c(-1,-2,-3)]))
+  test=match(Gene,colgo,nomatch =0)
+  test[test!=0]<-"TRUE"
+  test[test==0]<-"FALSE"
+  matrix=cbind(matrix,test) #assemblage des vecteurs pour chaque stress
+}
+
+
+matrix=as.data.frame(matrix)
+matrix=matrix[,c(-1,-2)]
+names(matrix)=name
+goslim=colnames(matrix)
+
+#Construction upset
+upset(matrix,goslim, name="Gene Set", min_degree=1)
+```
+
+```{r bilan,fig.height=25,fig.width=30}
+#--------------------------------------------------------------------------------------------------#
+                                              # Stacked barplot par stress
+#--------------------------------------------------------------------------------------------------#  
+cat("\n")
+pander::pandoc.header(paste0(" **Stacked barplot pour chaque stress**\n"), level = 2) 
+
+stress_long=stress_long[-1,]
+stress_long$var=stress_long[,2]==stress_long[,3]
+abiotic2=c("DROUGHT","GAMMA","HEAVY M.","NITROGEN","OTHER ABIO","OXYDATIVE","SALT","TEMPERATURE","UV")
+
+#Boucle par stress
+for(p in 1:9){
+  nam <- paste("gg", p, sep = "")
+  assign(nam,ggplot(stress_long[which(stress_long[,2]==abiotic2[p]),], aes(fill=Cat, y=set, x=Prob)) + 
+         geom_bar(position='stack', stat='identity') +
+         theme(axis.text.x = element_text(size=30,face="bold"),
+               axis.text.y=element_text(size=30,face="bold"),
+               axis.title=element_blank(),
+               legend.text=element_text(size=25,face = "bold"),
+               legend.key.size = unit(0.8,"cm"),
+               legend.title = element_text(size=25),
+               title = element_text(size=25,face="bold")) +
+         labs(fill = "Stress prédit") +
+         ggtitle(abiotic[p])+
+         scale_fill_manual(values = c("darkred","darkorange2","gold2",
+                                  "olivedrab2","forestgreen","cadetblue1",
+                                  "dodgerblue2","darkorchid3","darkslategray")))
+}
+
+grid=plot_grid(gg1 + theme(legend.position="none"),
+               gg2 + theme(legend.position="none"),
+               gg3 + theme(legend.position="none"),
+               gg4 + theme(legend.position="none"),
+               gg5 + theme(legend.position="none"),
+               gg6 + theme(legend.position="none"),
+               gg7 + theme(legend.position="none"),
+               gg8 + theme(legend.position="none"),
+               gg9 + theme(legend.position="none"), ncol=2)
+
+legend <- get_legend(gg1 + theme(legend.box.margin = margin(0, 0, 0, 12)))
+
+plot_grid(grid,legend,rel_widths = c(3, .4))
+```
+
+
+```{r end,collapse = TRUE,results='hold'}
+sessionInfo()
+```
