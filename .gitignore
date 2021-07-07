@@ -1,3 +1,4 @@
+# fichiers R
 .Rproj.user
 .Rhistory
 .RData
@@ -8,6 +9,6 @@
 
 # produced html in scripts
 *.html
-!/results/report_abiotic.html
-!/results/report_biotic.html
+!/docs/report_abiotic.html
+!/docs/report_biotic.html
 
