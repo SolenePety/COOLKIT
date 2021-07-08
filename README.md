@@ -4,41 +4,42 @@ Les scripts du stage peuvent être découpés en trois catégories, par ordre d'
    
  ### 0. Formatage des données
     
-    * **GEM2Net.table.R** : 
+* **GEM2Net.table.R** : 
 	permet d'enrichir le tableau de données d'expression de GEM2Net (*Gene_Swap_NO_NA.dat*) avec les métadonnées de *SONATA_Ordres_ML.txt*. Permet production de *GEM2Net_data.txt* (17341 colonnes = gènes, + 3 colonnes métadonnées (SWAP_ID, project ID, stress) et 387 lignes = échantillons).
  
  ### 1. Création des Gene Sets (GO SLIM et analyse différentielle)
     
-    * A. **Analyse_diff.Rmd** : 
+* A. **Analyse_diff.Rmd** : 
 	analyse différentielle, package limma, à partir *GEM2Net_table.R*. Production liste des gènes DEG par stress pour les 9 stress abiotiques.
     
-    * B. **subsets_GOSLIM_diff.R** : 
+* B. **subsets_GOSLIM_diff.R** : 
         * à partir *Gene_Swap_NO_NA.dat*, *SONATA_Ordres_ML.txt* et *ATH_GO_GOSLIM.txt*, construction des Gene Sets GO SLIM, 10 GO SLIM plus un random set (variables début de script : GOSLIM = termes dans ATH_GO_GOSLIM, names_output = noms sortis des fichiers et size = taille random set), 
+		
         * à partir listes des gènes, construction des Gene Sets signature de stress pour les 9 stress abiotiques. (fichiers .txt commençant par DEG...)
  
  ### 2. Analyses des données
  
      #### A. Analyse exploratoire
      
-        * **ACP_kmean.Rmd** :
+* **ACP_kmean.Rmd** :
 	Pour chaque Gene Set GO SLIM, échantillons abiotiques, génère ACP (label : project ID, coloration : stress) et kmean (screeplot clusters + ACP (label : project ID, coloration : cluster))
         
-        * **boxplot_samples.Rmd** :
+* **boxplot_samples.Rmd** :
 	Pour chaque Gene Set GO SLIM, génère boxplot via *ggplot2* des données d'expressions pour les 9 stress abiotiques puis les 9 biotiques en regroupant par stress. 
 	
-        * **prediction.Rmd** : 
+* **prediction.Rmd** : 
 	Essais fonctin predict() FactoMineR sur les données ACP pour Gene Set rythme circadien. 
 
-        * **report_(a)biotic.Rmd** :
+* **report_(a)biotic.Rmd** :
 		Pour 9 stress (a)biotiques, upset plot général des Gene Set GO SLIM. Pour chaque Gene Set :
-			* ACP (individus, inertie, contribution, distribution top 5 contributeurs),
-			* BCA (globale, par stress)
+		* ACP (individus, inertie, contribution, distribution top 5 contributeurs),
+		* BCA (globale, par stress)
 
-        * **result_deg_uv_necro.Rmd** : 
+* **result_deg_uv_necro.Rmd** : 
 		Même sorties que *report_(a)biotic.Rmd* mais pour les deux fichiers avec les gènes DEG spécifiquement pour UV (stress abiotiques) ou Necrotrophic Bacteria (stress biotiques) retirés.
 		
 		
-		    * **tests_abiotic.Rmd** :
+* **tests_abiotic.Rmd** :
 	Script brouillon, première exploration. Problématique des valeurs extrêmes. Génère notamment :
 		* L'ACP des individus de l'ensemble des données scaled, avec ou sans label.
 		* L'ACP des individus des données scaled rythme circadien,
@@ -46,7 +47,7 @@ Les scripts du stage peuvent être découpés en trois catégories, par ordre d'
 		* Les effectifs des stress biotiques et abiotiques,
 		* Des boxplots (comparaison scaled/non scaled, couleurs pour des valeurs extrêmes, des stress surprenant, des lignes remarquables sur ACP)
 	
-        * **upset_signature.R** :
+* **upset_signature.R** :
 	Prends en entrée les fichiers signatures de stress et génère upset plot correspondant.
 	
      
