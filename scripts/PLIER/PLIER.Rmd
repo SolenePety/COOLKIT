@@ -10,11 +10,7 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
-```
-
-```{r init}
+```{r init,message=FALSE,warning=FALSE,results="asis"}
 library(dplyr)
 library(tidyverse)
 library(kableExtra)
@@ -31,10 +27,17 @@ library(ggpubr)
 library(rstatix)
 library(emmeans)
 library(DT)
+library(here)
 ```
 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir =here())
+```
+
+
 ```{r commandes}
-source(file.path("..","..","git_multiplier","util","plier_util.R"))
+#source(file.path("..","..","git_multiplier","util","plier_util.R"))
 ```
   
 **L'objectif de ce rapport est de construire un modèle à l'aide de PLIER sur l'ensemble des données GEM2Net, sans faire la distinction des stress biotiques et abiotiques pour le calcul du modèle.**  
@@ -49,13 +52,12 @@ source(file.path("..","..","git_multiplier","util","plier_util.R"))
   
  
 ```{r data,cache=TRUE}
-setwd("C:/Users/spety/OneDrive/Documents/M1_BIMS/Stage/Rstudio/docs_txt")
 
 #-----------------------------------------------------------------------------------#
                                     #Aracyc
 #-----------------------------------------------------------------------------------#
 
-data=read.table("ara_pathways.20210325.txt",sep="\t",header=TRUE,fill=TRUE)
+data=read.table(here("data","Annotations","ara_pathways.20210325.txt"),sep="\t",header=TRUE,fill=TRUE)
 Aracyc=data[,c(2,7)] #récupération colonne pathway id et gène ID asocié
 Aracyc=Aracyc[-which(Aracyc[,2]=="unknown"),] #On enlève les pathways sans gène 
 unique_paths=unique(Aracyc[,1]) #vec avec pathway id 
@@ -65,7 +67,7 @@ unique_paths=unique(Aracyc[,1]) #vec avec pathway id
                                     #Données d'expression
 #-----------------------------------------------------------------------------------#
 
-data2=read.table("table_data.txt",sep="\t",header=TRUE)
+data2=read.table(here("data","GEM2Net","GEM2Net_data.txt"),sep="\t",header=TRUE)
 Stress=data2[,2]
 SampleID=data2[,3]
 data2=data2[,c(-1,-2,-3)]
@@ -76,16 +78,29 @@ exprs.mat=as.data.frame(data2)
 #-----------------------------------------------------------------------------------#
                                     #GO SLIM
 #-----------------------------------------------------------------------------------#
-files=c("circadian_rythm.txt","photo.txt",
-        "abiotic.txt","biotic.txt","endogenous.txt",
-        "external.txt","flower.txt","growth.txt",
-        "light.txt")
-name=c("Rythm circadian","Photosynthesis","Abiotic",
-       "Biotic","Endogenous","External","Flower","Growth","Light")
+files=c("GOSLIM_circadian_rythm.txt",
+        "GOSLIM_photo.txt",
+        "GOSLIM_abiotic.txt",
+        "GOSLIM_biotic.txt",
+        "GOSLIM_endogenous.txt",
+        "GOSLIM_external.txt",
+        "GOSLIM_flower.txt",
+        "GOSLIM_growth.txt",
+        "GOSLIM_light.txt")
+
+name=c("Rythm circadian",
+       "Photosynthesis",
+       "Abiotic",
+       "Biotic",
+       "Endogenous",
+       "External",
+       "Flower",
+       "Growth",
+       "Light")
 
 Liste=list()
 for(f in 1:length(files)){
-  data3=read.table(files[f],sep="\t",header=TRUE)
+  data3=read.table(here("data","subsets",files[f]),sep="\t",header=TRUE)
   data3=data3[,c(-1,-2,-3)]
   col=colnames(data3)
   Liste[f]=list(col)
@@ -260,16 +275,15 @@ database=database[-remove_index]
 #time<-proc.time()[3]-start #17 min
 
 #sauvegarde des résultats PLIER
-#save(plierResult,file="plierResult")
-load("plierResult")
+#save(plierResult,file=here("results","plierResult")
+
 ```
 
 ## **Matrice U**   
 ```{r U matrix}
-setwd("C:/Users/spety/OneDrive/Documents/M1_BIMS/Stage/Rstudio/docs_txt")
 
 #Chargement des résultats PLIER
-
+load(here("results","plierResult"))
 
 plierRes<-plierResult
 auc.cutoff=0.75
@@ -719,7 +733,6 @@ pwc
 **Une fois les variables latentes significatives sélectionnées, nous avons pu noter que l'effet stres n'est pas significatif ici, afin d'aller plus loin dans l'analyse de ces LV, nous allons utiliser de nouveaux jeu de données Arabidopsis issu d'analyse de puce CATMA, a priori similaires aux données GEM2Net. **
 
 ```{r new data photo}
-setwd("C:/Users/spety/OneDrive/Documents/M1_BIMS/Stage/Rstudio/docs_txt")
 #https://www.bioconductor.org/packages/release/bioc/vignettes/GEOquery/inst/doc/GEOquery.html
 
 library(GEOquery)
@@ -738,7 +751,7 @@ ex=as.data.frame(ex)
 #-----------------------------------------------------------------------------------#
                                 #Tableau convertion CatmaID/GeneID
 #-----------------------------------------------------------------------------------#
-design=read.table("GEO_photo.txt",fill=TRUE,header=TRUE,sep="\t")
+design=read.table(here("data","GSE22982","GEO_photo.txt"),fill=TRUE,header=TRUE,sep="\t")
 design=design[,c(1,3,4)]
 design$Gene <-paste(design$TAIR9_best,design$TAIR9_others,sep=";")
 design=separate_rows(design,Gene,sep=';')
@@ -833,7 +846,6 @@ colnames(b.photo)=c("Data","LV","Values","Jour","Heure")
 ```
 
 ```{r Heatmap,fig.width=12}
-setwd("C:/Users/spety/OneDrive/Documents/M1_BIMS/Stage/figures")
 #-----------------------------------------------------------------------------#
                               #Boxplots pour photosynthèse
 #-----------------------------------------------------------------------------#
