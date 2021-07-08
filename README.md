@@ -4,11 +4,13 @@ Les scripts du stage peuvent être découpés en trois catégories, par ordre d'
    
  ### 0. Formatage des données
     
-    * **GEM2Net.table.R** : permet d'enrichir le tableau de données d'expression de GEM2Net (*Gene_Swap_NO_NA.dat*) avec les métadonnées de *SONATA_Ordres_ML.txt*. Permet production de *GEM2Net_data.txt* (17341 colonnes = gènes, + 3 colonnes métadonnées (SWAP_ID, project ID, stress) et 387 lignes = échantillons).
+    * **GEM2Net.table.R** : 
+	permet d'enrichir le tableau de données d'expression de GEM2Net (*Gene_Swap_NO_NA.dat*) avec les métadonnées de *SONATA_Ordres_ML.txt*. Permet production de *GEM2Net_data.txt* (17341 colonnes = gènes, + 3 colonnes métadonnées (SWAP_ID, project ID, stress) et 387 lignes = échantillons).
  
  ### 1. Création des Gene Sets (GO SLIM et analyse différentielle)
     
-    * A. **Analyse_diff.Rmd** : analyse différentielle, package limma, à partir *GEM2Net_table.R*. Production liste des gènes DEG par stress pour les 9 stress abiotiques.
+    * A. **Analyse_diff.Rmd** : 
+	analyse différentielle, package limma, à partir *GEM2Net_table.R*. Production liste des gènes DEG par stress pour les 9 stress abiotiques.
     
     * B. **subsets_GOSLIM_diff.R** : 
         * à partir *Gene_Swap_NO_NA.dat*, *SONATA_Ordres_ML.txt* et *ATH_GO_GOSLIM.txt*, construction des Gene Sets GO SLIM, 10 GO SLIM plus un random set (variables début de script : GOSLIM = termes dans ATH_GO_GOSLIM, names_output = noms sortis des fichiers et size = taille random set), 

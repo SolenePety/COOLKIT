@@ -1,8 +1,9 @@
  ## Explication données
  
  ### Annotations
- 
-    * **ara_pathways.20210325.txt** : pathways Aracyc, ftp TAIR : lien
+   
+    * **ara_pathways.20210325.txt** : 
+    pathways Aracyc, ftp TAIR : lien
     
     * **ATH_GO_GOSLIM.txt** : lien, TAIR, colonnes intérêts : colonne 1 = gene ID (AT_....), colonne 9 = GO SLIM
     
