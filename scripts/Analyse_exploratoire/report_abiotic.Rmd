@@ -10,11 +10,7 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
-```
-
-```{r init}
+```{r init,message=FALSE,warning=FALSE,results="asis"}
 library(FactoMineR)
 library(factoextra)
 library("corrplot")
@@ -34,6 +30,12 @@ library(MASS)
 library(ComplexUpset)
 library(RColorBrewer)
 library(cowplot)
+library(here)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir=here())
 ```
 
 
@@ -47,23 +49,29 @@ Les fichiers utilisés ont deux colonnes informatives avec le stress appliqué s
 *Le fichier de chaque Gene Set est chargé à partir de la liste fournie dans le script. Les échantillons pour ce set sont séparés enuite pour les stress biotiques et abiotiques.* 
 
 ```{r upset}
-# Chemin vers dossier fichiers .txt et chargement
-setwd("../docs_txt/")
-data=read.table('Gene_Swap_NO_NA.dat',header=TRUE,sep='\t')
+
+data=read.table(here("data","GEM2Net",'Gene_Swap_NO_NA.dat'),header=TRUE,sep='\t')
 
 # Noms des colonnes sans les variables qualitatives
 Gene=noquote(colnames(data[,c(-1,-2,-3)]))
 
 #Noms des fichiers pour lecture dans boucle
-GOSLIM=c("circadian_rythm.txt","abiotic.txt","biotic.txt","endogenous.txt",
-         "external.txt","flower.txt","growth.txt","light.txt","photo.txt",
-         "stress.txt")
+GOSLIM=c("GOSLIM_circadian_rythm.txt",
+         "GOSLIM_abiotic.txt",
+         "GOSLIM_biotic.txt",
+         "GOSLIM_endogenous.txt",
+         "GOSLIM_external.txt",
+         "GOSLIM_flower.txt",
+         "GOSLIM_growth.txt",
+         "GOSLIM_light.txt",
+         "GOSLIM_photo.txt",
+         "GOSLIM_stress.txt")
 
 matrix=cbind(rep(0,17341),Gene) #initialisation matrice
 
 #Remplacer 0 par TRUE ou FAlSE pour chaque gene set
 for(i in 1:10){
-  datago=read.table(GOSLIM[i],header=TRUE,sep='\t')
+  datago=read.table(here("data","subsets",GOSLIM[i]),header=TRUE,sep='\t')
   colgo=noquote(colnames(datago[,c(-1,-2,-3)]))
   test=match(Gene,colgo,nomatch =0)
   test[test!=0]<-"TRUE"
@@ -87,23 +95,38 @@ goslim=colnames(matrix)[2:11]
 
 
 ```{r gene set,results='asis'}
-setwd("../docs_txt/")
 
 #Variables importantes pour code, noms des fichiers pour lecture, nom des gene set pour entêtes personnalisées, différents stress..
-files=c("circadian_rythm.txt","abiotic.txt","biotic.txt","endogenous.txt",
-         "external.txt","flower.txt","growth.txt","light.txt","photo.txt",
-         "stress.txt","random.txt")
+files=c("GOSLIM_circadian_rythm.txt",
+        "GOSLIM_abiotic.txt",
+        "GOSLIM_biotic.txt",
+        "GOSLIM_endogenous.txt",
+         "GOSLIM_external.txt",
+        "GOSLIM_flower.txt",
+        "GOSLIM_growth.txt",
+        "GOSLIM_light.txt",
+        "GOSLIM_photo.txt",
+         "GOSLIM_stress.txt",
+        "random.txt")
 
-name=c("Circadian rythm","Abiotic","Biotic","Endogenous stimulus",
-       "External stimulus","Flower","Growth","Light","Photosynthesis",
-       "Stress","Random")
+name=c("Circadian rythm",
+       "Abiotic",
+       "Biotic",
+       "Endogenous stimulus",
+       "External stimulus",
+       "Flower",
+       "Growth",
+       "Light",
+       "Photosynthesis",
+       "Stress",
+       "Random")
 
 abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
 
 #Boucle principale lecture Gene set
-for(i in 1:11){
+for(i in 1:length(files)){
 #Chargement Gene set 
-  data=read.table(files[i],header=TRUE,sep='\t')
+  data=read.table(here("data","subsets",files[i]),header=TRUE,sep='\t')
   #Conservation des échantillons seulement abiotiques
   data_abiotic=data[data[,2] %in% abiotic, ]
   row.names(data_abiotic) <- data_abiotic$Swap_ID
@@ -135,9 +158,6 @@ for(i in 1:11){
              addEllipses = TRUE, # Concentration ellipses
              palette="Set1")
       print(g1)
-      
-      nam <- paste("ACP_",files[i] , sep = "")
-      assign(nam,g1)
       
       
       cat("\n")#Screeplot intertie
@@ -259,13 +279,3 @@ for(i in 1:11){
 }
 ```
 
-```{r figure,fig.width=12}
-grid=plot_grid(ACP_biotic.txt + theme(legend.position="none"),
-               ACP_abiotic.txt + theme(legend.position="none"),
-               ACP_photo.txt + theme(legend.position="none"),
-               ACP_random.txt + theme(legend.position="none"),ncol=2)
-
-legend <- get_legend(ACP_biotic.txt + theme(legend.box.margin = margin(0, 0, 0, 12)))
-
-plot_grid(grid,legend,rel_widths = c(4, 1))
-```

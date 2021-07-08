@@ -9,12 +9,7 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
-```
-
-
-```{r init}
+```{r init,message=FALSE,warning=FALSE,results="asis"}
 library(FactoMineR)
 library(factoextra)
 library("corrplot")
@@ -34,6 +29,12 @@ library(MASS)
 library(ComplexUpset)
 library(RColorBrewer)
 library(forcats)
+library(here)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir=here())
 ```
 
 On s'intéresse ici à comparer la distribution au sein de chaque échantillon en distinguant les stress biotiques et abiotiques pour chaque Gene Set.  
@@ -53,23 +54,39 @@ Et les stress biotiques :
   
 ```{r abiotic,results='asis',fig.width=15,fig.height=10}
 #Changement chemin 
-setwd("../docs_txt/")
+setwd(here("data","subsets"))
 
 #Variables importantes pour chargement code, noms fichiers enregistrés, noms pour entêtes, stress biotiques et abiotiques
-files=c("circadian_rythm.txt","abiotic.txt","biotic.txt","endogenous.txt",
-         "external.txt","flower.txt","growth.txt","light.txt","photo.txt",
-         "stress.txt","random.txt")
+files=c("GOSLIM_circadian_rythm.txt",
+        "GOSLIM_abiotic.txt",
+        "GOSLIM_biotic.txt",
+        "GOSLIM_endogenous.txt",
+        "GOSLIM_external.txt",
+        "GOSLIM_flower.txt",
+        "GOSLIM_growth.txt",
+        "GOSLIM_light.txt",
+        "GOSLIM_photo.txt",
+        "GOSLIM_stress.txt",
+        "random.txt")
 
-name=c("Circadian rythm","Abiotic","Biotic","Endogenous stimulus",
-       "External stimulus","Flower","Growth","Light","Photosynthesis",
-       "Stress","Random")
+name=c("Circadian rythm",
+       "Abiotic",
+       "Biotic",
+       "Endogenous stimulus",
+       "External stimulus",
+       "Flower",
+       "Growth",
+       "Light",
+       "Photosynthesis",
+       "Stress",
+       "Random")
 
 abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
 
 cat("\n")
 pander::pandoc.header("**Abiotic Stress**", level = 1)
   
-for(i in 1:11){
+for(i in 1:length(files)){
 #Chargement Gene set 
   data=read.table(files[i],header=TRUE,sep='\t')
 
@@ -106,23 +123,14 @@ for(i in 1:11){
 ```
 
 ```{r biotic,results='asis',fig.width=15,fig.height=10}
-#Changement chemin 
-setwd("../docs_txt/")
-
-files=c("circadian_rythm.txt","abiotic.txt","biotic.txt","endogenous.txt",
-         "external.txt","flower.txt","growth.txt","light.txt","photo.txt",
-         "stress.txt","random.txt")
-
-name=c("Circadian rythm","Abiotic","Biotic","Endogenous stimulus",
-       "External stimulus","Flower","Growth","Light","Photosynthesis",
-       "Stress","Random")
+setwd(here("data","subsets"))
 
 biotic=c("BIOTROPHIC.BACTERIA","FUNGI","NECROTROPHIC.BACTERIA","NEMATODES","OOMYCETE","OTHER-BIOTIC","RHODOCOCCUS","STIFENIA","VIRUS")
 
 cat("\n")
 pander::pandoc.header("**Biotic Stress**", level = 1)
 
-for(i in 1:11){
+for(i in 1:length(files)){
   #Chargement Gene set 
   data=read.table(files[i],header=TRUE,sep='\t')
   

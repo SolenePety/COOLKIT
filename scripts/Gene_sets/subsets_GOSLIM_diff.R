@@ -16,16 +16,16 @@ GOSLIM=c("circadian rhythm",
          "response to light stimulus",
          "response to stress")
 
-names_output=c("circadian_rythm.txt",
-               "flower.txt",
-               "growth.txt",
-               "photo.txt",
-               "abiotic.txt",
-               "biotic.txt",
-               "endogenous.txt",
-               "external.txt",
-               "light.txt",
-               "stress.txt")
+names_output=c("GOSLIM_circadian_rythm.txt",
+               "GOSLIM_flower.txt",
+               "GOSLIM_growth.txt",
+               "GOSLIM_photo.txt",
+               "GOSLIM_abiotic.txt",
+               "GOSLIM_biotic.txt",
+               "GOSLIM_endogenous.txt",
+               "GOSLIM_external.txt",
+               "GOSLIM_light.txt",
+               "GOSLIM_stress.txt")
 
 size = 50 #taille random set
 

@@ -9,16 +9,7 @@ output:
     code_folding: hide
     df_print: paged
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
-```
-
-L'objectif est ici de tester la prédiction à partir du modèle de classification que nous avons pu déterminer.  
-
-C'est le fichier **circadian_rythm.txt** qui va être utilisé. C'est le plus petit Gene Set des GO SLIM, sans doute un des plus précis.  
-
-```{r init}
+```{r init,message=FALSE,warning=FALSE,results="asis"}
 library(FactoMineR)
 library(factoextra)
 library("corrplot")
@@ -34,19 +25,25 @@ library(MASS)
 library(RColorBrewer) #Palettes
 library(prodlim)
 library(ggplotify)
+library(here)
 ```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir=here())
+```
+
+L'objectif est ici de tester la prédiction à partir du modèle de classification que nous avons pu déterminer.  
+
+C'est le fichier **GOSLIM_circadian_rythm.txt** qui va être utilisé. C'est le plus petit Gene Set des GO SLIM, sans doute un des plus précis.  
 
 # **ACP Gene Set entier (57 gènes)**  
 ```{r files}
-setwd("../docs_txt/")
+
 abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
 
-files=c("circadian_rythm.txt")
-
-name=c("Circadian rythm")
-
 #Chargement Gene set 
-data=read.table("circadian_rythm.txt",header=TRUE,sep='\t',check.names = FALSE)
+data=read.table(here("data","subsets","GOSLIM_circadian_rythm.txt"),header=TRUE,sep='\t',check.names = FALSE)
 
 data_abiotic=data[data[,2] %in% abiotic, ]
 names=data_abiotic$vec2
@@ -68,18 +65,8 @@ print(as.ggplot(q)) ## Change row names after the fact
 # **Projection factomineR**  
 
 ```{r pred}
-setwd("../docs_txt/")
-abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
-
-files=c("circadian_rythm.txt")
-
-name=c("Circadian rythm")
-
-#Chargement Gene set 
-  data=read.table("circadian_rythm.txt",header=TRUE,sep='\t',check.names = FALSE)
   liste=sample(c(1:224),10)
 
-  data_abiotic=data[data[,2] %in% abiotic, ]
   set_test=data_abiotic[liste,]
   rownames(set_test)<-c(1:10)
 

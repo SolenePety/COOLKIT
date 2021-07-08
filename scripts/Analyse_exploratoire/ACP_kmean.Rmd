@@ -10,12 +10,7 @@ output:
     df_print: paged
 ---
 
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
-```
-
-```{r init}
+```{r init,message=FALSE,warning=FALSE,results="asis"}
 library(FactoMineR)
 library(factoextra)
 library("corrplot")
@@ -35,8 +30,15 @@ library(MASS)
 library(ComplexUpset)
 library(RColorBrewer)
 library(ggplotify)
+library(here)
 ```
-  
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir=here())
+```
+
+
 # **Rappel : ACP globale **  
 
 Le but de ce fichier est de tester la classification des **stress de *GEM2NET* **. Ecarter les valeurs fragiles. Améliorer la classification en tentant d'établir des **sous-catégories** de stress.  
@@ -44,9 +46,8 @@ Le but de ce fichier est de tester la classification des **stress de *GEM2NET* *
 Le **poids des projets** est aussi à étudier dans une deuxième partie.
 
 ```{r ACP_globale}
-setwd("../docs_txt/")
 
-data=read.table('table_data.txt',header=TRUE,sep='\t')
+data=read.table(here("data","GEM2Net",'GEM2Net_data.txt'),header=TRUE,sep='\t')
 
 abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
 
@@ -72,11 +73,31 @@ fviz_pca_ind(res1,
 
 # **ACP par project ID**
 ```{r ACP_ID}
-setwd("../docs_txt/")
+setwd(here("data","subsets"))
 
-files=c("circadian_rythm.txt","photo.txt","DEGDROUGHT.txt","DEGGAMMA.txt","DEGHEAVY.METAL.txt","DEGNITROGEN.txt","DEGOTHER.ABIOTIC.txt","DEGOXYDATIVE.STRESS.txt","DEGSALT.txt","DEGTEMPERATURE.txt","DEGUV.txt")
+files=c("GOSLIM_circadian_rythm.txt",
+        "GOSLIM_photo.txt",
+        "DEGDROUGHT.txt",
+        "DEGGAMMA.txt",
+        "DEGHEAVY.METAL.txt",
+        "DEGNITROGEN.txt",
+        "DEGOTHER.ABIOTIC.txt",
+        "DEGOXYDATIVE.STRESS.txt",
+        "DEGSALT.txt",
+        "DEGTEMPERATURE.txt",
+        "DEGUV.txt")
 
-name=c("Circadian rythm","Photosynthesis","Drought","Gamma","Heavy Metal","Nitrogen","Other abiotic","Oxydative stress","Salt","Temperature","UV")
+name=c("Circadian rythm",
+       "Photosynthesis",
+       "Drought",
+       "Gamma",
+       "Heavy Metal",
+       "Nitrogen",
+       "Other abiotic",
+       "Oxydative stress",
+       "Salt",
+       "Temperature",
+       "UV")
 
 for(i in 1:length(files)){
 #Chargement Gene set 

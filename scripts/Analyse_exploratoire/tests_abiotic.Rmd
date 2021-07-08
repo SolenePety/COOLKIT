@@ -10,12 +10,7 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE,root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
-```
-
-
-```{r init}
+```{r init,message=FALSE,warning=FALSE,results="asis"}
 library(FactoMineR)
 library(factoextra)
 library("corrplot")
@@ -24,6 +19,11 @@ library(plotly)
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
+library(here)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir=here())
 ```
 
 Ce rapport est le premier du stage réalisé. C'est le début de l'exploration des données avec notamment la problématique de comprendre l'origine des valeurs extrêmes et du comportement de certains stress comme UV et NECROTROPHIC BACTERIA. A ce stade nous avons travaillé avec les données d'expression sur les 18 stress confondus.  
@@ -35,11 +35,9 @@ Le travail de recherche s'est fait exclusivement pour le Set abiotic pour simpli
 
 ## **ACP données brutes**
 ```{r data}
-# Path vers dossier contenant les fichiers .txt de données
-setwd("../docs_txt/")
 
 # Chargement du fichier abiotic
-data=read.table('abiotic.txt',header=TRUE,sep='\t')
+data=read.table(here("data","subsets","GOSLIM_abiotic.txt"),header=TRUE,sep='\t')
 
 # Matrice des données centrée réduite pour comparaison
 scale_data=as.data.frame(scale(data[,c(-1,-2,-3)]))
@@ -54,7 +52,7 @@ fviz_pca_ind(res,
             
 )+labs(title="ACP données brutes")
 
-data2=read.table('circadian_rythm.txt',header=TRUE,sep='\t')
+data2=read.table(here("data","subsets",'GOSLIM_circadian_rythm.txt'),header=TRUE,sep='\t')
 
 # Matrice des données centrée réduite pour comparaison
 scale_data2=as.data.frame(scale(data2[,c(-1,-2,-3)]))
@@ -96,7 +94,7 @@ sup=c(length(data)%/%6,(length(data)%/%6)*2,(length(data)%/%6)*3,
          (length(data)%/%6)*4,(length(data)%/%6)*5,length(data))
 
 #Tracer les boxplots dans boucle puis coloration des points UV 
-for(i in 1:6){
+for(i in 1:length(inf)){
 boxplot(data[inf[i]:sup[i]],pch="*",main=paste("Brute : [",inf[i],":",sup[i],"]"))
 stripchart(data[which(data[,2]=="UV"),inf[i]:sup[i]], vertical=TRUE, add=TRUE, method="stack", col='red', pch="*")
 boxplot(scale_data[inf[i]:sup[i]],pch="*",main=paste("Scaled : [",inf[i],":",sup[i],"]"))
