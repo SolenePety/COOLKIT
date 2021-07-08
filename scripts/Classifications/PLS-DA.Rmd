@@ -10,12 +10,7 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
-```
-
-
-```{r init}
+```{r init,message=FALSE,warning=FALSE,results="asis"}
 library(FactoMineR)
 library(factoextra)
 library("corrplot")
@@ -40,22 +35,36 @@ library(viridis)
 library(cowplot)
 library(ComplexUpset)
 library(mixOmics)
+library(here)
 ```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = here())
+```
+
   
 # **Détails échantillons projetés**  
 
 ```{r sample,cache=TRUE}
-setwd("../docs_txt/")
 
 abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
 
-files=c("circadian_rythm.txt","photo.txt","DEGDROUGHT.txt",
-        "DEGGAMMA.txt","DEGOTHER.ABIOTIC.txt","DEGSALT.txt")
+files=c("GOSLIM_circadian_rythm.txt",
+        "GOSLIM_photo.txt",
+        "DEGDROUGHT.txt",
+        "DEGGAMMA.txt",
+        "DEGOTHER.ABIOTIC.txt",
+        "DEGSALT.txt")
 
-name=c("Circadian rythm","Photosynthesis","Drought",
-       "Gamma","Other abiotic","Salt")
+name=c("Circadian rythm",
+       "Photosynthesis",
+       "Drought",
+       "Gamma",
+       "Other abiotic",
+       "Salt")
 
-raw_data=read.table("table_data.txt",header=TRUE,sep='\t',check.names = FALSE)
+raw_data=read.table(here("data","GEM2Net","GEM2Net_data.txt"),header=TRUE,sep='\t',check.names = FALSE)
 raw_abiotic=raw_data[raw_data[,2] %in% abiotic, ]
 
 #--------------------------------------------------------------------------------------------------#
@@ -225,7 +234,6 @@ rownames(sample_table10)<-c(1:9)
 # **Gene Set**  
 
 ```{r code,fig.width=13}
-setwd("../docs_txt/")
 
 #initialisation des matrices chunk
 matrix_prob=matrix(0,nrow=length(files),ncol=9)
@@ -242,7 +250,7 @@ for(i in 1:length(files)){
   vec2=c(0,0,0,0,0,0,0,0,0)
 
   #lecture fichier
-  data=read.table(files[i],header=TRUE,sep='\t',check.names = FALSE)
+  data=read.table(here("data","subsets",files[i]),header=TRUE,sep='\t',check.names = FALSE)
   
   
   cat("\n")    
@@ -347,15 +355,23 @@ ht1
 ## **Upset plot**
 ```{r upset plot}
 # Chemin vers dossier fichiers .txt et chargement
-setwd("../docs_txt/")
-data=read.table('Gene_Swap_NO_NA.dat',header=TRUE,sep='\t')
+
+data=read.table(here("data","GEM2Net",'Gene_Swap_NO_NA.dat'),header=TRUE,sep='\t')
 
 #Fichier à utiliser dans boucle
-files=c("circadian_rythm.txt","photo.txt","DEGDROUGHT.txt",
-        "DEGGAMMA.txt","DEGOTHER.ABIOTIC.txt","DEGSALT.txt")
+files=c("GOSLIM_circadian_rythm.txt",
+        "GOSLIM_photo.txt",
+        "DEGDROUGHT.txt",
+        "DEGGAMMA.txt",
+        "DEGOTHER.ABIOTIC.txt",
+        "DEGSALT.txt")
 
-name=c("Circadian rythm","Photosynthesis","Drought",
-       "Gamma","Other abiotic","Salt")
+name=c("Circadian rythm",
+       "Photosynthesis",
+       "Drought",
+       "Gamma",
+       "Other abiotic",
+       "Salt")
 
 # Noms des colonnes sans les variables qualitatives
 Gene=noquote(colnames(data[,c(-1,-2,-3)]))
@@ -364,7 +380,7 @@ matrix=cbind(rep(0,17341),Gene) #initialisation matrice
 
 #Remplacer 0 par TRUE ou FAlSE pour chaque gene set
 for(i in 1:6){
-  datago=read.table(files[i],header=TRUE,sep='\t')
+  datago=read.table(here("data","subsets",files[i]),header=TRUE,sep='\t')
   colgo=noquote(colnames(datago[,c(-1,-2,-3)]))
   test=match(Gene,colgo,nomatch =0)
   test[test!=0]<-"TRUE"

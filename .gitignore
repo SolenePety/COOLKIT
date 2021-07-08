@@ -12,3 +12,6 @@
 !/docs/report_abiotic.html
 !/docs/report_biotic.html
 
+#cache des fichiers
+*_cache/
+*_files/

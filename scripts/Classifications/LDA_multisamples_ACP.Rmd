@@ -10,12 +10,7 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = "~/M1_BIMS/Stage/Rstudio/.Rmd_html/")
-```
-
-
-```{r init}
+```{r init,message=FALSE,warning=FALSE,results="asis"}
 library(FactoMineR)
 library(factoextra)
 library("corrplot")
@@ -36,25 +31,43 @@ library(kableExtra)
 library(ComplexHeatmap)
 library(cowplot)
 library(viridis)
+library(here)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis",root.dir = here())
 ```
   
 # **Détails échantillons projetés**  
 
 ```{r sample, cache=TRUE}
-setwd("../docs_txt/")
 
 abiotic=c("DROUGHT","GAMMA","HEAVY.METAL","NITROGEN","OTHER-ABIOTIC","OXYDATIVE.STRESS","SALT","TEMPERATURE","UV")
 
-files=c("circadian_rythm.txt","photo.txt","DEGDROUGHT.txt",
-        "DEGGAMMA.txt","DEGOTHER.ABIOTIC.txt","DEGSALT.txt",
-        "DEGHEAVY.METAL.txt","DEGNITROGEN.txt","DEGOXYDATIVE.STRESS.txt",
-        "DEGTEMPERATURE.txt","DEGUV.txt")
+files=c("GOSLIM_circadian_rythm.txt",
+        "GOSLIM_photo.txt",
+        "DEGDROUGHT.txt",
+        "DEGGAMMA.txt",
+        "DEGOTHER.ABIOTIC.txt",
+        "DEGSALT.txt",
+        "DEGHEAVY.METAL.txt",
+        "DEGNITROGEN.txt",
+        "DEGOXYDATIVE.STRESS.txt",
+        "DEGTEMPERATURE.txt",
+        "DEGUV.txt")
 
-name=c("Circadian rythm","Photosynthesis","Drought",
-       "Gamma","Other abiotic","Salt",
-       "Heavy Metal","Nitrogen","Oxydative Stress","Temperature","UV")
+name=c("Circadian rythm",
+       "Photosynthesis",
+       "Drought",
+       "Gamma",
+       "Other abiotic",
+       "Salt",
+       "Heavy Metal",
+       "Nitrogen",
+       "Oxydative Stress",
+       "Temperature","UV")
 
-raw_data=read.table("table_data.txt",header=TRUE,sep='\t',check.names = FALSE)
+raw_data=read.table(here("data","GEM2Net","GEM2Net_data.txt"),header=TRUE,sep='\t',check.names = FALSE)
 raw_abiotic=raw_data[raw_data[,2] %in% abiotic, ]
 
 #######################Création échantillons
@@ -214,7 +227,6 @@ rownames(sample_table10)<-c(1:9)
 # **Gene Set**  
 
 ```{r code,fig.width=11}
-setwd("../docs_txt/")
 
 matrix=matrix(0,nrow=1,ncol=9)
 matrix_prob=matrix(0,nrow=length(files),ncol=9)
@@ -225,7 +237,7 @@ for(i in 1:length(files)){
   match=c(0,0,0,0,0,0,0,0,0)
    cat("\n")
   
-  data=read.table(files[i],header=TRUE,sep='\t',check.names = FALSE)
+  data=read.table(here("data","subsets",files[i]),header=TRUE,sep='\t',check.names = FALSE)
     
   pander::pandoc.header(paste0(" **", name[i] ," (",dim(data)[2]-3," gènes)**\n"), level = 2)  
   
