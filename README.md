@@ -9,17 +9,17 @@ Les scripts du stage peuvent être découpés en trois catégories, par ordre d'
  
  ### 1. Création des Gene Sets (GO SLIM et analyse différentielle)
     
-* A. **Analyse_diff.Rmd** : 
+* **A. Analyse_diff.Rmd** : 
 	analyse différentielle, package limma, à partir *GEM2Net_table.R*. Production liste des gènes DEG par stress pour les 9 stress abiotiques.
     
-* B. **subsets_GOSLIM_diff.R** : 
-        * à partir *Gene_Swap_NO_NA.dat*, *SONATA_Ordres_ML.txt* et *ATH_GO_GOSLIM.txt*, construction des Gene Sets GO SLIM, 10 GO SLIM plus un random set (variables début de script : GOSLIM = termes dans ATH_GO_GOSLIM, names_output = noms sortis des fichiers et size = taille random set), 
+* **B. subsets_GOSLIM_diff.R** : 
+	* à partir *Gene_Swap_NO_NA.dat*, *SONATA_Ordres_ML.txt* et *ATH_GO_GOSLIM.txt*, construction des Gene Sets GO SLIM, 10 GO SLIM plus un random set (variables début de script : GOSLIM = termes dans ATH_GO_GOSLIM, names_output = noms sortis des fichiers et size = taille random set), 
 		
-        * à partir listes des gènes, construction des Gene Sets signature de stress pour les 9 stress abiotiques. (fichiers .txt commençant par DEG...)
+	* à partir listes des gènes, construction des Gene Sets signature de stress pour les 9 stress abiotiques. (fichiers .txt commençant par DEG...)
  
  ### 2. Analyses des données
  
-     #### A. Analyse exploratoire
+ #### A. Analyse exploratoire
      
 * **ACP_kmean.Rmd** :
 	Pour chaque Gene Set GO SLIM, échantillons abiotiques, génère ACP (label : project ID, coloration : stress) et kmean (screeplot clusters + ACP (label : project ID, coloration : cluster))
@@ -55,52 +55,35 @@ Les scripts du stage peuvent être découpés en trois catégories, par ordre d'
      
      * **LDA_multisamples.Rmd** :
      
-        	Analyse discriminante linéaire, à partir *table_data.txt*, génère 10 sets d'échantillons stratifiés aléatoire. Calculs pour chaque gene set <200 gènes (6 fichiers) LDA pour les 10 sets. Les sorties sont pour chaque gene set :
-        		* matrice probabilités moyennées sur 10, 
-        		* stacked barplot des probabilités pour chaque stress,
-        		* comparaison probabilité d'attribution correcte ACP vs données d'expression,
-        		* comparaison probabilité d'attribution correcte One-vs-all vs Multisamples
-        	En figures bilan, nous avons :
-        		* Les heatmap de confiance de prédiction et proportions d'échantillons bien classées,
-        		* L'upset plot des fichiers d'entrées
-        		* Les stacked barplot pour chaque stress
+Analyse discriminante linéaire, à partir *table_data.txt*, génère 10 sets d'échantillons stratifiés aléatoire. Calculs pour chaque gene set <200 gènes (6 fichiers) LDA pour les 10 sets. Les sorties sont pour chaque gene set :
+	* matrice probabilités moyennées sur 10, 
+    * stacked barplot des probabilités pour chaque stress,
+    * comparaison probabilité d'attribution correcte ACP vs données d'expression,
+    * comparaison probabilité d'attribution correcte One-vs-all vs Multisamples
+	
+En figures bilan, nous avons :
+    * Les heatmap de confiance de prédiction et proportions d'échantillons bien classées,
+    * L'upset plot des fichiers d'entrées
+    * Les stacked barplot pour chaque stress
         		
-         * **LDA_multisamples_ACP.Rmd**, **LDA_oneversusall.Rmd**, **LDA_onevesusall_PCA.Rmd** :
-        	Ces scripts génèrent reprennent les mêmes sorties globalement que *LDA_multisamples.Rmd* sans comparaison des méthodes. Ce sont les scripts propres à chaque méthode.
+     * **LDA_multisamples_ACP.Rmd**, **LDA_oneversusall.Rmd**, **LDA_onevesusall_PCA.Rmd** :
+Ces scripts génèrent reprennent les mêmes sorties globalement que *LDA_multisamples.Rmd* sans comparaison des méthodes. Ce sont les scripts propres à chaque méthode.
         	
-         * **PLS-DA.Rmd** :	
-        	Mêmes sorties que pour la LDA pour deux méthodes de calculs de distance PLS-DA.
+    * **PLS-DA.Rmd** :	
+Mêmes sorties que pour la LDA pour deux méthodes de calculs de distance PLS-DA.
      
-     #### C. PLIER
+#### C. PLIER
 
-        * **PLIER.Rmd** :
-        	Application de la stratégie PLIER. Se découpe en plusieurs étapes.
-        	* **Récupération Pathways** :
-        		Plusieurs fichiers : *ara_pathways.20210325.txt* (AraCyc), les GO SLIM, package KEGGAPI. Sortie graphique indice de Jaccard (Heatmap, histogramme distribution)
-        	* **Modèle** :
-        		Le chunk du calcul du modèle est commenté. Les résultats sont stockés dans *load(plierResult)*. Il en ressort :
-        			*la matrice U pour LV significatives, 
-        			* le summary PLIER LV significatives, 
-        			* Les ACP LV significatives vs not significatives, 
-        			* Les boxplots d'expression de chaque LV sig pour stress abiotiques,
-        			* ANOVA (pas significative)
+    * **PLIER.Rmd** :
+Application de la stratégie PLIER. Se découpe en plusieurs étapes.
+		* **Récupération Pathways** :
+Plusieurs fichiers : *ara_pathways.20210325.txt* (AraCyc), les GO SLIM, package KEGGAPI. Sortie graphique indice de Jaccard (Heatmap, histogramme distribution)
+		* **Modèle** :
+Le chunk du calcul du modèle est commenté. Les résultats sont stockés dans *load(plierResult)*. Il en ressort :
+        	*la matrice U pour LV significatives, 
+        	* le summary PLIER LV significatives, 
+        	* Les ACP LV significatives vs not significatives, 
+        	* Les boxplots d'expression de chaque LV sig pour stress abiotiques,
+        	* ANOVA (pas significative)
         	* **MultiPLIER** :
         		GEOquery pour récupérer données photosynthèse. Transformation matrice expression pour intégrer noms gènes. Nouvelle matrice B (LV/Pathways x Samples). Génère Heatmap nouvelle matrice pour LV sig (*Warning : LV sig rentrées à la main*) et plot line correspondant.
-        		 
- 
-					
-			
-
-	
-
-
-	
-
-	
- 
-	
- 
-		
-
-			
- 
