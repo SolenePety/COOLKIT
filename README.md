@@ -1,5 +1,8 @@
  ## Code source stage M1 COOLKIT  
  
+ 
+ ![Organigramme](C:\Users\spety\OneDrive\Documents\M1_BIMS\Stage\organigrammeGIT.png)
+ 
 Les scripts du stage peuvent être découpés en trois catégories, par ordre d'exécution :
    
  ### 0. Formatage des données
