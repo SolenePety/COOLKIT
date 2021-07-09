@@ -8,7 +8,7 @@ Les scripts du stage peuvent être découpés en trois catégories, par ordre d'
  ### 0. Formatage des données
     
 * **GEM2Net.table.R** : 
-	permet d'enrichir le tableau de données d'expression de ![GEM2Net](http://tools.ips2.u-psud.fr/GEM2NET/) (*Gene_Swap_NO_NA.dat*) avec les métadonnées de *SONATA_Ordres_ML.txt*. Permet production de *GEM2Net_data.txt* (17341 colonnes = gènes, + 3 colonnes métadonnées (SWAP_ID, project ID, stress) et 387 lignes = échantillons).
+	permet d'enrichir le tableau de données d'expression de [GEM2Net](http://tools.ips2.u-psud.fr/GEM2NET/) (*Gene_Swap_NO_NA.dat*) avec les métadonnées de *SONATA_Ordres_ML.txt*. Permet production de *GEM2Net_data.txt* (17341 colonnes = gènes, + 3 colonnes métadonnées (SWAP_ID, project ID, stress) et 387 lignes = échantillons).
  
  ### 1. Création des Gene Sets (GO SLIM et analyse différentielle)
     
@@ -87,7 +87,7 @@ Les scripts du stage peuvent être découpés en trois catégories, par ordre d'
 		
 	* **Récupération Pathways** :
 	
-		Plusieurs fichiers : *ara_pathways.20210325.txt* (![AraCyc](ftp://ftp.plantcyc.org/Pathways/)), les GO SLIM, package KEGGAPI. Sortie graphique indice de Jaccard (Heatmap, histogramme distribution)
+		Plusieurs fichiers : *ara_pathways.20210325.txt* ([AraCyc](ftp://ftp.plantcyc.org/Pathways/)), les GO SLIM, package KEGGAPI. Sortie graphique indice de Jaccard (Heatmap, histogramme distribution)
 
 	* **Modèle** :
 	
