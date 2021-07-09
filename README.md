@@ -1,5 +1,6 @@
  ## Code source stage M1 COOLKIT  
  
+ [![DOI](https://zenodo.org/badge/383136551.svg)](https://zenodo.org/badge/latestdoi/383136551)
  
  ![Organigramme](https://github.com/SolenePety/COOLKIT/blob/main/docs/organigrammeGIT.png)
  
