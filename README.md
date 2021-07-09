@@ -90,11 +90,11 @@ Les scripts du stage peuvent être découpés en trois catégories, par ordre d'
 	
 		Le chunk du calcul du modèle est commenté. Les résultats sont stockés dans *load(plierResult)*. Il en ressort :
 		
-        	*la matrice U pour LV significatives, 
-        	* le summary PLIER LV significatives, 
-        	* Les ACP LV significatives vs not significatives, 
-        	* Les boxplots d'expression de chaque LV sig pour stress abiotiques,
-        	* ANOVA (pas significative)
+        *la matrice U pour LV significatives, 
+        * le summary PLIER LV significatives, 
+        * Les ACP LV significatives vs not significatives, 
+        * Les boxplots d'expression de chaque LV sig pour stress abiotiques,
+        * ANOVA (pas significative)
 			
     * **MultiPLIER** :
 	
