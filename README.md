@@ -1,7 +1,7 @@
  ## Code source stage M1 COOLKIT  
  
  
- ![Organigramme](https://github.com/SolenePety/COOLKIT/docs/organigrammeGIT.png)
+ ![Organigramme](https://github.com/SolenePety/COOLKIT/blob/main/docs/organigrammeGIT.png)
  
 Les scripts du stage peuvent être découpés en trois catégories, par ordre d'exécution :
    
